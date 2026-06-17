@@ -1,0 +1,261 @@
+//
+//  CryptoEngine.swift
+//  Skald
+//
+//  ECDH (§4), AEAD key derivation (§5) and AES-256-GCM seal/open (§6) with
+//  the canonical nonce (DIR‖counter) and AAD (ns_raw‖from‖to).
+//
+//  This file is compiled into BOTH targets (app and NSE).  Keep it
+//  extension-safe: no UIKit, no UserNotifications.
+//
+
+import CryptoKit
+import Foundation
+
+/// All-in-one AEAD engine for a single peer (the agent).
+///
+/// One `CryptoEngine` instance is bound to **one** (agent_x25519_pub, my
+/// identity) pair.  The AES key is **static** for the lifetime of the
+/// pairing (no PFS in v1).  Counters are managed by the caller via the
+/// `counterSource` / `lastSeenCounter` / `updateLastSeen` closures so the
+/// engine does not need to know about `KeychainStore` directly.
+final class CryptoEngine {
+
+    // MARK: - Peer identity (constructor inputs)
+
+    /// 32-byte raw X25519 public key of the peer (the agent).  Used for ECDH.
+    let agentX25519Pub: Data
+
+    /// 32-byte raw Ed25519 public key of the peer (the agent).  Used as the
+    /// `to` field in the AAD when WE are sending, and as the `from` field
+    /// when we are receiving.
+    let agentEd25519Pub: Data
+
+    /// Our own X25519 private key.  Used for ECDH.
+    let myX25519Priv: Curve25519.KeyAgreement.PrivateKey
+
+    /// Our own Ed25519 public key (raw 32B).  Used as the `to` field in AAD
+    /// when we are receiving, and as the `from` field when we are sending.
+    let myEd25519Pub: Data
+
+    /// 32-byte raw namespace_id (§7) — used in the AAD.
+    let namespaceIdRaw: Data
+
+    // MARK: - Init
+
+    init(agentX25519Pub: Data,
+         agentEd25519Pub: Data,
+         myX25519Priv: Curve25519.KeyAgreement.PrivateKey,
+         myEd25519Pub: Data,
+         namespaceIdRaw: Data)
+    {
+        precondition(agentX25519Pub.count == 32, "agent_x25519_pub must be 32B")
+        precondition(agentEd25519Pub.count == 32, "agent_ed25519_pub must be 32B")
+        precondition(myEd25519Pub.count == 32, "my_ed25519_pub must be 32B")
+        precondition(namespaceIdRaw.count == 32, "namespace_id_raw must be 32B")
+        self.agentX25519Pub = agentX25519Pub
+        self.agentEd25519Pub = agentEd25519Pub
+        self.myX25519Priv = myX25519Priv
+        self.myEd25519Pub = myEd25519Pub
+        self.namespaceIdRaw = namespaceIdRaw
+    }
+
+    // MARK: - AEAD key derivation (crypto.md §4 + §5)
+
+    /// Derive the AES-256 key for this peer from the ECDH shared secret.
+    ///
+    /// `aes_key = HKDF(ikm = shared, salt = SESSION_SALT, info = SESSION_INFO, 32)`.
+    func deriveAesKey() throws -> SymmetricKey {
+        let peerPub: Curve25519.KeyAgreement.PublicKey
+        do {
+            peerPub = try Curve25519.KeyAgreement.PublicKey(
+                rawRepresentation: agentX25519Pub
+            )
+        } catch {
+            throw SkaldError.invalidKey
+        }
+        let shared: SharedSecret
+        do {
+            shared = try myX25519Priv.sharedSecretFromKeyAgreement(with: peerPub)
+        } catch {
+            throw SkaldError.invalidKey
+        }
+        return shared.hkdfDerivedSymmetricKey(
+            using: SHA256.self,
+            salt: CryptoConstants.sessionSalt,
+            sharedInfo: CryptoConstants.sessionInfo,
+            outputByteCount: 32
+        )
+    }
+
+    // MARK: - Nonce construction (crypto.md §6.1)
+
+    /// Build a 12-byte AEAD nonce: 4 bytes of `direction` (DIR) followed by
+    /// 8 bytes of `counter` in big-endian.
+    static func makeNonce(direction: [UInt8], counter: UInt64) -> Data {
+        precondition(direction.count == 4, "direction must be 4B")
+        var n = Data(direction)
+        var be = counter.bigEndian
+        n.append(Data(bytes: &be, count: 8))
+        return n
+    }
+
+    // MARK: - AAD construction (crypto.md §6.2)
+
+    /// Build the 96-byte AAD: `namespace_id_raw(32) ‖ from(32) ‖ to(32)`.
+    /// All inputs are Ed25519 public keys (32B raw).
+    static func makeAad(namespaceIdRaw: Data,
+                        fromEd25519Pub: Data,
+                        toEd25519Pub: Data) -> Data
+    {
+        precondition(namespaceIdRaw.count == 32, "namespace_id_raw must be 32B")
+        precondition(fromEd25519Pub.count == 32, "from must be 32B")
+        precondition(toEd25519Pub.count == 32, "to must be 32B")
+        var aad = Data()
+        aad.reserveCapacity(96)
+        aad.append(namespaceIdRaw)
+        aad.append(fromEd25519Pub)
+        aad.append(toEd25519Pub)
+        return aad
+    }
+
+    // MARK: - Seal (crypto.md §6)
+
+    /// Encrypt `plaintext` for the given direction.  `counterSource` MUST
+    /// return the next counter value to use (the implementation will not
+    /// itself increment — `KeychainStore.incrementCounter` does that and
+    /// the caller should pass its result).
+    ///
+    /// Returns the 12-byte nonce and the sealed blob (`ct ‖ tag`, no nonce).
+    func seal(plaintext: Data,
+              direction: [UInt8],
+              counterSource: () -> UInt64) throws -> (nonce: Data, sealed: Data)
+    {
+        precondition(direction.count == 4, "direction must be 4B")
+
+        let counter = counterSource()
+        let nonce = CryptoEngine.makeNonce(direction: direction, counter: counter)
+
+        // When WE are the sender, `from = my_pub` and `to = agent_ed25519_pub`.
+        let aad = CryptoEngine.makeAad(
+            namespaceIdRaw: namespaceIdRaw,
+            fromEd25519Pub: myEd25519Pub,
+            toEd25519Pub: agentEd25519Pub
+        )
+
+        let aesKey = try deriveAesKey()
+        let gcmNonce: AES.GCM.Nonce
+        do {
+            gcmNonce = try AES.GCM.Nonce(data: nonce)
+        } catch {
+            throw SkaldError.invalidNonce
+        }
+        let box: AES.GCM.SealedBox
+        do {
+            box = try AES.GCM.seal(plaintext, using: aesKey,
+                                   nonce: gcmNonce, authenticating: aad)
+        } catch {
+            throw SkaldError.decryptionFailed
+        }
+        // Combined = ciphertext ‖ tag.
+        let sealed = box.ciphertext + box.tag
+        return (nonce, sealed)
+    }
+
+    // MARK: - Open (crypto.md §6)
+
+    /// Decrypt and authenticate an incoming sealed blob.
+    ///
+    /// - Parameter nonce: 12-byte nonce from the envelope (DIR‖counter).
+    /// - Parameter sealed: `ct ‖ tag` blob (base64-decoded by the caller).
+    /// - Parameter direction: 4-byte direction prefix we expect.  Used only
+    ///   for sanity checking against the first 4 bytes of `nonce`.
+    /// - Parameter lastSeenCounter: closure returning the highest counter
+    ///   we've accepted so far.  Replay protection rejects anything `<=`.
+    /// - Parameter updateLastSeen: closure called with the new counter on
+    ///   success, so the caller can persist it (e.g. via
+    ///   `KeychainStore.compareAndAdvanceCounter`).
+    /// - Parameter fromEd25519Pub: ed25519 public key of the sender (i.e.
+    ///   the agent's ed25519 pubkey).  Must match `agentX25519Pub`'s
+    ///   Ed25519 counterpart — we don't enforce equality of the two curves
+    ///   (they are independent keypairs in our model), but we DO require
+    ///   this to be the same identity we're paired with.
+    /// - Parameter toEd25519Pub: ed25519 public key of the recipient —
+    ///   must equal `myEd25519Pub`.
+    func open(nonce: Data,
+              sealed: Data,
+              direction: [UInt8],
+              lastSeenCounter: () -> UInt64,
+              updateLastSeen: (UInt64) -> Void,
+              fromEd25519Pub: Data,
+              toEd25519Pub: Data) throws -> Data
+    {
+        precondition(direction.count == 4, "direction must be 4B")
+        guard nonce.count == 12 else {
+            throw SkaldError.invalidNonce
+        }
+        // Sanity: first 4 bytes of nonce must match the expected DIR.
+        let dirBytes = Array(nonce.prefix(4))
+        if dirBytes != direction {
+            throw SkaldError.invalidNonce
+        }
+        guard toEd25519Pub == myEd25519Pub else {
+            // The packet claims a different recipient.  Reject without
+            // attempting decryption (AAD would fail anyway, but fail fast
+            // is nicer for debugging).
+            throw SkaldError.decryptionFailed
+        }
+        guard fromEd25519Pub.count == 32 else {
+            throw SkaldError.decryptionFailed
+        }
+
+        // Extract counter (bytes 4..12, big-endian).
+        let counterBytes = nonce.subdata(in: 4..<12)
+        let counter = counterBytes.withUnsafeBytes { ptr -> UInt64 in
+            var be: UInt64 = 0
+            _ = withUnsafeMutableBytes(of: &be) { dst in
+                ptr.copyBytes(to: dst)
+            }
+            return UInt64(bigEndian: be)
+        }
+
+        let last = lastSeenCounter()
+        if counter <= last {
+            throw SkaldError.counterRegression
+        }
+
+        // The AAD is `ns_raw ‖ from ‖ to` — from = sender (agent), to = us.
+        let aad = CryptoEngine.makeAad(
+            namespaceIdRaw: namespaceIdRaw,
+            fromEd25519Pub: fromEd25519Pub,
+            toEd25519Pub: toEd25519Pub
+        )
+
+        let aesKey = try deriveAesKey()
+        let gcmNonce = try AES.GCM.Nonce(data: nonce)
+        // `sealed` is ciphertext‖tag (no nonce).  Split for AES.GCM.SealedBox.
+        let ct = sealed.prefix(sealed.count - 16)
+        let tag = sealed.suffix(16)
+        let box: AES.GCM.SealedBox
+        do {
+            box = try AES.GCM.SealedBox(
+                nonce: gcmNonce,
+                ciphertext: ct,
+                tag: tag
+            )
+        } catch {
+            throw SkaldError.invalidNonce
+        }
+        let plaintext: Data
+        do {
+            plaintext = try AES.GCM.open(box, using: aesKey, authenticating: aad)
+        } catch {
+            // Per crypto.md §12: do NOT distinguish the cause in the error.
+            throw SkaldError.decryptionFailed
+        }
+
+        // Persist the new counter ONLY after a successful decryption.
+        updateLastSeen(counter)
+        return plaintext
+    }
+}

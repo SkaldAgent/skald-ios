@@ -1,0 +1,1482 @@
+{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "—" : {
+      "comment" : "Em-dash placeholder shown in Settings phase label and device fields when no value is available.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—"
+          }
+        }
+      }
+    },
+    "About" : {
+      "comment" : "Settings section header for the app info (version, etc.).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Info"
+          }
+        }
+      }
+    },
+    "Action required" : {
+      "comment" : "NSE: body of the generic fallback notification shown when the encrypted push cannot be decrypted (no sensitive content leaks).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Action required"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azione richiesta"
+          }
+        }
+      }
+    },
+    "Approve" : {
+      "comment" : "ApproveCard button label and UNNotificationAction title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approve"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approva"
+          }
+        }
+      }
+    },
+    "Awaiting" : {
+      "comment" : "SettingsView status badge text for the awaitingAuth phase.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Awaiting"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In attesa"
+          }
+        }
+      }
+    },
+    "Awaiting confirmation" : {
+      "comment" : "PairingView header title while the app is waiting for the agent to confirm the device. Also used as SettingsView phase label for awaitingAuth when in pairing follow-up.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Awaiting confirmation"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In attesa di conferma"
+          }
+        }
+      }
+    },
+    "Awaiting confirmation on Skald…" : {
+      "comment" : "PairingViewModel status text shown after the pairing WS closed cleanly, while we wait for the agent to approve the device.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Awaiting confirmation on Skald…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In attesa di conferma su Skald…"
+          }
+        }
+      }
+    },
+    "Camera not available.\nEnter the payload manually." : {
+      "comment" : "ScanView: label shown when AVCaptureDevice is unavailable (e.g. simulator). Tells the user to enter the payload manually.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera not available.\nEnter the payload manually."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotocamera non disponibile.\nInserisci il payload manualmente."
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "comment" : "Generic cancel button (PairingView awaiting-cancel, InboxView response sheet, RejectReasonView, SettingsView logout dialog).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annulla"
+          }
+        }
+      }
+    },
+    "Cancelled" : {
+      "comment" : "PairingViewModel status text shown when the user taps Cancel during pairing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelled"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annullato"
+          }
+        }
+      }
+    },
+    "Clears pairing credentials from this device. The Skald desktop will need to authorize this device again." : {
+      "comment" : "SettingsView footer text under the Logout button, explaining the consequences of logging out.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clears pairing credentials from this device. The Skald desktop will need to authorize this device again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancella le credenziali di pairing dal dispositivo. Il desktop Skald dovrà autorizzare di nuovo questo device."
+          }
+        }
+      }
+    },
+    "Clarification" : {
+      "comment" : "ClarificationCard header label, identifying the card as a pending clarification. NSE also uses this string as the title for a clarification push (with the 💬 emoji prefix).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clarification"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiarimento"
+          }
+        }
+      }
+    },
+    "Clarifications" : {
+      "comment" : "InboxView section header for the list of pending clarifications.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clarifications"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiarimenti"
+          }
+        }
+      }
+    },
+    "Confirm logout?" : {
+      "comment" : "SettingsView confirmationDialog title shown before logging out.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm logout?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confermi il logout?"
+          }
+        }
+      }
+    },
+    "Connected" : {
+      "comment" : "SettingsView status badge / phase label when the client session is authenticated and connected.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connesso"
+          }
+        }
+      }
+    },
+    "Connecting to relay…" : {
+      "comment" : "PairingViewModel status text shown while the pairing WS is being opened.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting to relay…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connessione al relay…"
+          }
+        }
+      }
+    },
+    "Connecting to Skald…" : {
+      "comment" : "PairingView header title shown by default while the WS connection is in progress.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting to Skald…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connessione a Skald…"
+          }
+        }
+      }
+    },
+    "Connection" : {
+      "comment" : "SettingsView row label for the connection status badge.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connection"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connessione"
+          }
+        }
+      }
+    },
+    "Context" : {
+      "comment" : "ClarificationCard DisclosureGroup label, also reused in InboxView's clarification response sheet for the same disclosure.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Context"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contesto"
+          }
+        }
+      }
+    },
+    "Copied!" : {
+      "comment" : "SettingsView transient label shown for ~1.5s after the user copies the namespace id to the pasteboard.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copied!"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiato!"
+          }
+        }
+      }
+    },
+    "Decryption: " : {
+      "comment" : "InboxViewModel lastError prefix when AES-GCM open of an incoming payload fails; followed by the underlying error description.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decryption: "
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decifratura: "
+          }
+        }
+      }
+    },
+    "Details" : {
+      "comment" : "ApprovalCard DisclosureGroup label for the optional long-form detail of a pending approval.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dettagli"
+          }
+        }
+      }
+    },
+    "Device" : {
+      "comment" : "SettingsView section header for the device (key + name) info.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dispositivo"
+          }
+        }
+      }
+    },
+    "Disconnect" : {
+      "comment" : "InboxView toolbar leading button label, shown when the WS is connected; tap drops the session.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnect"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnetti"
+          }
+        }
+      }
+    },
+    "Disconnected" : {
+      "comment" : "SettingsView status badge / phase label when the .client session is down and reconnecting.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnected"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnesso"
+          }
+        }
+      }
+    },
+    "Disconnected — retrying…" : {
+      "comment" : "InboxView banner shown above the list while the InboxViewModel is in the .disconnected/connecting backoff loop.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnected — retrying…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnesso — riprovo…"
+          }
+        }
+      }
+    },
+    "Disconnecting…" : {
+      "comment" : "SettingsView label shown inside the Logout button while the best-effort logout E2E is in flight.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnecting…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnessione…"
+          }
+        }
+      }
+    },
+    "Inbox" : {
+      "comment" : "SkaldApp tab item label for the inbox tab. Kept as \"Inbox\" in Italian (common in IT App Store UIs).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inbox"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inbox"
+          }
+        }
+      }
+    },
+    "Invalid QR" : {
+      "comment" : "ScanViewModel lastError used when the QR fails to decode or the namespace verification throws a non-SkaldError.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid QR"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "QR non valido"
+          }
+        }
+      }
+    },
+    "Invalid QR: " : {
+      "comment" : "ScanViewModel lastError prefix for SkaldError thrown during QR decoding/validation; concatenated with the underlying error description.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid QR: "
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "QR non valido: "
+          }
+        }
+      }
+    },
+    "Invalid QR: namespace_id mismatch" : {
+      "comment" : "ScanViewModel lastError when the QR's namespace_id field does not match the SHA-256 recomputed from agent_ed25519_pub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid QR: namespace_id mismatch"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "QR non valido: namespace_id non corrisponde"
+          }
+        }
+      }
+    },
+    "Invalid relay URL" : {
+      "comment" : "PairingViewModel state.error when the QR's relay_url cannot be parsed as a URL.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid relay URL"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL del relay non valido"
+          }
+        }
+      }
+    },
+    "Key derivation: " : {
+      "comment" : "PairingViewModel state.error prefix when KeyManager.deriveKeys throws; concatenated with the underlying error description.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Key derivation: "
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Derivazione chiavi: "
+          }
+        }
+      }
+    },
+    "Keychain: " : {
+      "comment" : "PairingViewModel state.error prefix when KeyManager.loadOrCreateSeed throws; concatenated with the underlying error description.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keychain: "
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keychain: "
+          }
+        }
+      }
+    },
+    "Loading credentials…" : {
+      "comment" : "PairingViewModel status text shown while the local seed is being loaded from the Keychain.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading credentials…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caricamento credenziali…"
+          }
+        }
+      }
+    },
+    "Logout" : {
+      "comment" : "SettingsView: section button label, dialog destructive button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logout"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logout"
+          }
+        }
+      }
+    },
+    "My key (Ed25519)" : {
+      "comment" : "SettingsView row label for the truncated hex of the device's Ed25519 public key.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My key (Ed25519)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La mia chiave (Ed25519)"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "comment" : "SettingsView row label for the user-visible device name (UIDevice.current.name).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome"
+          }
+        }
+      }
+    },
+    "Namespace" : {
+      "comment" : "SettingsView section header for the namespace-id row.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Namespace"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Namespace"
+          }
+        }
+      }
+    },
+    "Namespace ID" : {
+      "comment" : "SettingsView row label for the namespace id (SHA-256 hex). Tapping copies the full identifier to the pasteboard.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Namespace ID"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Namespace ID"
+          }
+        }
+      }
+    },
+    "New requests from Skald will appear here." : {
+      "comment" : "InboxView empty-state subtitle shown when the inbox has no pending approvals or clarifications.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New requests from Skald will appear here."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le nuove richieste di Skald appariranno qui."
+          }
+        }
+      }
+    },
+    "Not paired" : {
+      "comment" : "SettingsView status badge text when the app has no stored pairing credentials.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not paired"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non abbinato"
+          }
+        }
+      }
+    },
+    "Nothing to do" : {
+      "comment" : "InboxView empty-state title when no approvals or clarifications are pending.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing to do"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Niente da fare"
+          }
+        }
+      }
+    },
+    "Open Skald on your desktop and show the pairing code to the camera." : {
+      "comment" : "ScanView subhead explaining how to start the pairing flow on the desktop agent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Skald on your desktop and show the pairing code to the camera."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri Skald sul desktop e mostra il codice di pairing alla fotocamera."
+          }
+        }
+      }
+    },
+    "Open to see what's new" : {
+      "comment" : "NSE: body of the wake-only push (no ciphertext); the user is just told to open the app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open to see what's new"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri per vedere le novità"
+          }
+        }
+      }
+    },
+    "Pairing" : {
+      "comment" : "PairingView navigationTitle.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing"
+          }
+        }
+      }
+    },
+    "Pairing credentials will be removed. You will need to scan the QR again." : {
+      "comment" : "SettingsView confirmationDialog message body for the Logout confirmation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing credentials will be removed. You will need to scan the QR again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verranno cancellate le credenziali di pairing. Dovrai scansionare di nuovo il QR."
+          }
+        }
+      }
+    },
+    "Pairing error" : {
+      "comment" : "PairingView header title when state == .error(_).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing error"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Errore di pairing"
+          }
+        }
+      }
+    },
+    "Pairing in progress" : {
+      "comment" : "SettingsView phase label for the .pairing phase.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing in progress"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing in corso"
+          }
+        }
+      }
+    },
+    "Pairing…" : {
+      "comment" : "SettingsView status badge text for the .pairing phase (single word with ellipsis, identical in EN and IT).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing…"
+          }
+        }
+      }
+    },
+    "Pending approvals" : {
+      "comment" : "InboxView section header for the list of pending approval cards.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pending approvals"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approvazioni pendenti"
+          }
+        }
+      }
+    },
+    "Persist error: " : {
+      "comment" : "PairingViewModel state.error prefix when persisting the seed/keys to Keychain fails; concatenated with the underlying error description.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Persist error: "
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Persistenza: "
+          }
+        }
+      }
+    },
+    "Phase" : {
+      "comment" : "SettingsView row label for the AppState.phase value.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phase"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fase"
+          }
+        }
+      }
+    },
+    "QR: invalid agent key" : {
+      "comment" : "PairingViewModel state.error when the QR's agent_ed25519_pub field is not valid hex.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "QR: invalid agent key"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "QR: chiave agente non valida"
+          }
+        }
+      }
+    },
+    "Ready" : {
+      "comment" : "PairingViewModel initial status before performPairing() runs.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pronto"
+          }
+        }
+      }
+    },
+    "Reason for rejection…" : {
+      "comment" : "RejectReasonView TextField placeholder for the optional reason the user gives when rejecting an approval.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reason for rejection…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Motivo del rifiuto…"
+          }
+        }
+      }
+    },
+    "Reconnect" : {
+      "comment" : "InboxView toolbar button accessibilityLabel for the manual reconnect button (visible label is the SF Symbol icon).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconnect"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riconnetti"
+          }
+        }
+      }
+    },
+    "Reject" : {
+      "comment" : "RejectReasonView navigationTitle, ApprovalCard destructive button label, and UNNotificationAction title for the destructive reject action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reject"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rifiuta"
+          }
+        }
+      }
+    },
+    "Relay error" : {
+      "comment" : "PairingViewModel state.error fallback when a SkaldError has no errorDescription; used as the default in the catch arm.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relay error"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Errore relay"
+          }
+        }
+      }
+    },
+    "Reply" : {
+      "comment" : "InboxView (clarification response sheet) navigationTitle, and UNNotificationAction title for the respond action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reply"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rispondi"
+          }
+        }
+      }
+    },
+    "Request from Skald" : {
+      "comment" : "RejectReasonView section header describing the approval request being rejected.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request from Skald"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Richiesta di Skald"
+          }
+        }
+      }
+    },
+    "Retry" : {
+      "comment" : "PairingView error retry button label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riprova"
+          }
+        }
+      }
+    },
+    "Saving credentials…" : {
+      "comment" : "PairingViewModel status text shown while the post-auth credentials are being persisted to the Keychain.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saving credentials…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salvataggio credenziali…"
+          }
+        }
+      }
+    },
+    "Scan Skald QR" : {
+      "comment" : "ScanView header title shown above the camera preview.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan Skald QR"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scansiona il QR di Skald"
+          }
+        }
+      }
+    },
+    "Send" : {
+      "comment" : "Generic send button (ClarificationCard button label, InboxView clarification response sheet confirmation button).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invia"
+          }
+        }
+      }
+    },
+    "Send answer: " : {
+      "comment" : "InboxViewModel lastError prefix when sending a clarification_response payload fails; concatenated with the underlying error description.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send answer: "
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invio risposta: "
+          }
+        }
+      }
+    },
+    "Send decision: " : {
+      "comment" : "InboxViewModel lastError prefix when sending an approval_response payload fails; concatenated with the underlying error description.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send decision: "
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invio decisione: "
+          }
+        }
+      }
+    },
+    "Settings" : {
+      "comment" : "SkaldApp tab item label and SettingsView navigationTitle.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impostazioni"
+          }
+        }
+      }
+    },
+    "Skald key (Ed25519)" : {
+      "comment" : "SettingsView row label for the truncated hex of the agent's Ed25519 public key.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skald key (Ed25519)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiave Skald (Ed25519)"
+          }
+        }
+      }
+    },
+    "State not initialized" : {
+      "comment" : "PairingViewModel state.error when the appState reference is nil (ViewModel was never attached).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "State not initialized"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stato non inizializzato"
+          }
+        }
+      }
+    },
+    "Status" : {
+      "comment" : "SettingsView section header for the connection/phase status block.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stato"
+          }
+        }
+      }
+    },
+    "Tap to copy the full identifier." : {
+      "comment" : "SettingsView footer text under the Namespace section, instructing the user to tap to copy.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to copy the full identifier."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tocca per copiare l'identificatore completo."
+          }
+        }
+      }
+    },
+    "The reason will be shown to Skald. You can leave it empty." : {
+      "comment" : "RejectReasonView footer text under the reason TextField, explaining what happens with the entered reason.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The reason will be shown to Skald. You can leave it empty."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il motivo verrà mostrato a Skald. Puoi anche lasciare vuoto."
+          }
+        }
+      }
+    },
+    "unknown error" : {
+      "comment" : "ScanViewModel fallback string when a SkaldError's errorDescription is nil. Concatenated after the \"Invalid QR: \" prefix.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "unknown error"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "errore sconosciuto"
+          }
+        }
+      }
+    },
+    "Version" : {
+      "comment" : "SettingsView row label for the app version (Bundle.main.appVersionString).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versione"
+          }
+        }
+      }
+    },
+    "Why reject?" : {
+      "comment" : "RejectReasonView section header above the reason TextField.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why reject?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perché rifiuti?"
+          }
+        }
+      }
+    },
+    "Write here…" : {
+      "comment" : "TextField placeholder for the user's free-form answer in a ClarificationCard or in the InboxView clarification response sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write here…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scrivi qui…"
+          }
+        }
+      }
+    },
+    "Your answer" : {
+      "comment" : "InboxView section header for the answer TextField in the clarification response sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your answer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La tua risposta"
+          }
+        }
+      }
+    },
+    "❌ Reject" : {
+      "comment" : "UNNotificationAction title for the destructive reject action (kept short with the emoji icon for the locked-screen action sheet).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "❌ Reject"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "❌ Rifiuta"
+          }
+        }
+      }
+    },
+    "✅ Approve" : {
+      "comment" : "UNNotificationAction title for the approve action (kept short with the emoji icon for the locked-screen action sheet).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✅ Approve"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✅ Approva"
+          }
+        }
+      }
+    },
+    "✏️ Reply" : {
+      "comment" : "UNNotificationAction title for the respond action on a clarification push (kept short with the emoji icon).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✏️ Reply"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✏️ Rispondi"
+          }
+        }
+      }
+    },
+    "💬 Clarification" : {
+      "comment" : "NSE: title of the rich push for a clarification (emoji + noun).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "💬 Clarification"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "💬 Chiarimento"
+          }
+        }
+      }
+    }
+  }
+}

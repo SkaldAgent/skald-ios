@@ -1,0 +1,146 @@
+# ──────────────────────────────────────────────
+#  Xcode & Swift
+# ──────────────────────────────────────────────
+
+# Xcode build output
+DerivedData/
+build/
+*.build/
+
+# Xcode user-specific settings (per-machine)
+*.xcuserdata
+*.xcuserstate
+xcuserdata/
+*.mode1v3
+*.mode2v3
+*.mode1
+*.mode2
+*.perspectivev3
+*.pbxuser
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.dSYM.bundle
+
+# CocoaPods
+Pods/
+!Tests/Pods/
+!Example/Pods/
+*.xcworkspace
+!**/*.xcworkspace
+
+# Carthage
+Carthage/Build/
+
+# Swift Package Manager
+.build/
+Packages/
+!Sources/**/Package.swift
+Package.resolved
+
+# SwiftLint
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspace
+
+# ──────────────────────────────────────────────
+#  macOS
+# ──────────────────────────────────────────────
+
+.DS_Store
+.AppleDouble
+.LSOverride
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.supported
+
+# ──────────────────────────────────────────────
+#  Xcode Playgrounds
+# ──────────────────────────────────────────────
+
+*.playground/
+!*.playground/Contents.swift
+!*.playground/Resources/
+timeline.xctimeline
+playground.xcworkspace
+
+# ──────────────────────────────────────────────
+#  App / Archive / Distribution
+# ──────────────────────────────────────────────
+
+*.app
+*.app.dSYM
+*.app.dSYM.zip
+*.app.zip
+*.ipa
+*.xcarchive
+*.appex
+*.storedata
+*.storedata-shm
+*.storedata-wal
+
+# ──────────────────────────────────────────────
+#  IDEs & Editors
+# ──────────────────────────────────────────────
+
+# JetBrains
+.idea/
+*.iml
+
+# VSCode
+.vscode/
+*.swp
+*.swo
+*~
+
+# Xcode snippets (user-level)
+~/Library/Developer/Xcode/UserData/CodeSnippets/
+
+# ──────────────────────────────────────────────
+#  Dependencies & Package Managers
+# ──────────────────────────────────────────────
+
+# Mint
+Mintfile
+
+# Accio
+Dep/
+
+# Rome
+Rome/
+
+# ──────────────────────────────────────────────
+#  Logs & Temp Files
+# ──────────────────────────────────────────────
+
+*.xcresult
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ──────────────────────────────────────────────
+#  CI / Environment
+# ──────────────────────────────────────────────
+
+.env
+.env.local
+.env.staging
+.env.production
+*.env
+
+# Fastlane
+fastlane/report.xml
+fastlane/test_output
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/screenshots/**/*.jpg
+!fastlane/screenshots/**/README.txt
+.metadata/
+.screenshots/

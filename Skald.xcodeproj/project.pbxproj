@@ -1,0 +1,766 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		19BA81B163E3FFBC2BC48814 /* SkaldApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9577A8CAFA15848D33DBB82 /* SkaldApp.swift */; };
+		1A38F7810B8C1FA8A89B640B /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED854AE8ABAA88A69C4AB7CF /* KeychainStore.swift */; };
+		1A8F9B10688710468047791D /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC30548CFFE5AA70FB06D295 /* NotificationService.swift */; };
+		2509367AC1C4E0CE61C2CA53 /* InboxViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2361CDC3F35D31BC424F1B /* InboxViewModel.swift */; };
+		26ECB2A1F1BDC464D2637404 /* PairingQR.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24B5AEB8809B0C91EDAD2EA2 /* PairingQR.swift */; };
+		2D0B6939F7B882442B6A5DB7 /* RejectReasonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB264D700B7F053965417E2 /* RejectReasonView.swift */; };
+		32505FC9FD65C0E3E5ECDD74 /* CryptoEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3109A3BEC5D546E2268DD7F /* CryptoEngine.swift */; };
+		3861918F9502A93836966F6F /* PairingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12EDE3B38F5ABBA6E481BED1 /* PairingViewModel.swift */; };
+		494684805A381EF1AAE80482 /* ScanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744A908DDB0606A6430C4AAB /* ScanViewModel.swift */; };
+		4954A4623669A95DBC6FBACC /* ApprovalCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0D5E0EE6F0B81736B41293 /* ApprovalCard.swift */; };
+		497B5B4FCEA81C8CB69007DA /* NotificationServiceExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B77C8DBEB5EC9D7861788919 /* NotificationServiceExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		514D3836B43F96E4A66AA024 /* ClarificationCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF47F69B68665B1A21B76DF /* ClarificationCard.swift */; };
+		52F81F0CAD626A229BF763CD /* CryptoConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEABD44947172107D2FF3C56 /* CryptoConstants.swift */; };
+		5AE49CC2A5413B90CF10E0BE /* RelayClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78CEC552540FA09B7DC38A85 /* RelayClient.swift */; };
+		687A5AF7A9A62E088ACAB895 /* SkaldInboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD4A930D7D6728BC1F63B5B2 /* SkaldInboxTests.swift */; };
+		68C4B71FF4435CB6F41B3083 /* Payloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDC8B8A139059FB192B687AA /* Payloads.swift */; };
+		86AD222B41D7AB3CD9A9E52F /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3AD21ADB0046A172A95C84 /* ScanView.swift */; };
+		9A67123FA54A088B1EBF5BB4 /* InboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D98F2CE5662171EA3FF9376 /* InboxView.swift */; };
+		9B0ABA47B9C97C15F7E8F0E6 /* CryptoEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3109A3BEC5D546E2268DD7F /* CryptoEngine.swift */; };
+		A0EF140D74CF43AB60596AD1 /* PairingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0244E4317247EBE038FF8530 /* PairingView.swift */; };
+		A34ED79076376DFF65A7953F /* PairingQR.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24B5AEB8809B0C91EDAD2EA2 /* PairingQR.swift */; };
+		A391339CFC8C0E0876185231 /* CryptoConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEABD44947172107D2FF3C56 /* CryptoConstants.swift */; };
+		A7DC33C5A43AB3BCF2548062 /* KeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24FB2A7F724195A5D54F5596 /* KeyManager.swift */; };
+		AF39AA4F7B70CDB45A228E39 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D643860DE181535FB37FC483 /* SettingsViewModel.swift */; };
+		B0761E65040479F82DDB6D47 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 72B702F9E9765731C6E471DA /* InfoPlist.xcstrings */; };
+		CCDF9FD230A13DEA88B42654 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 38C3AEDE3791974A1A2CF91D /* Localizable.xcstrings */; };
+		CE74D930DA55AA55DDD0EB71 /* Payloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDC8B8A139059FB192B687AA /* Payloads.swift */; };
+		CFE20C65E4E791373486F41E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FB7BDBC0343CCCF95A710D7 /* AppDelegate.swift */; };
+		D00AA0E226CE65DA1C72DF39 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 38C3AEDE3791974A1A2CF91D /* Localizable.xcstrings */; };
+		D11014672DB63C787012E2F8 /* KeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24FB2A7F724195A5D54F5596 /* KeyManager.swift */; };
+		D4B88F432199E7D931F68D2D /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED854AE8ABAA88A69C4AB7CF /* KeychainStore.swift */; };
+		D74D4D1D2EADECB5ED675E5D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72265BDE27E8E846240AAD94 /* SettingsView.swift */; };
+		EA744F17D163BEA356CE57E9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C7E7822D46167D366C543A2E /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9B4539B531D80D70D086AB2B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0CB564F0894156F04E0E3BAA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A54634FF2E03722E50F790B9;
+			remoteInfo = Skald;
+		};
+		9E21F43D32DDB02EF987CCE0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0CB564F0894156F04E0E3BAA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 18A1E449C123A13E583347E3;
+			remoteInfo = NotificationServiceExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		CFC2AAFECCB60E9FA6293F30 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				497B5B4FCEA81C8CB69007DA /* NotificationServiceExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0244E4317247EBE038FF8530 /* PairingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingView.swift; sourceTree = "<group>"; };
+		0C3AD21ADB0046A172A95C84 /* ScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanView.swift; sourceTree = "<group>"; };
+		0CB264D700B7F053965417E2 /* RejectReasonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RejectReasonView.swift; sourceTree = "<group>"; };
+		12EDE3B38F5ABBA6E481BED1 /* PairingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingViewModel.swift; sourceTree = "<group>"; };
+		24B5AEB8809B0C91EDAD2EA2 /* PairingQR.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingQR.swift; sourceTree = "<group>"; };
+		24FB2A7F724195A5D54F5596 /* KeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyManager.swift; sourceTree = "<group>"; };
+		2B0D5E0EE6F0B81736B41293 /* ApprovalCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApprovalCard.swift; sourceTree = "<group>"; };
+		38C3AEDE3791974A1A2CF91D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		4AF47F69B68665B1A21B76DF /* ClarificationCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClarificationCard.swift; sourceTree = "<group>"; };
+		6FB7BDBC0343CCCF95A710D7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		72265BDE27E8E846240AAD94 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		72B702F9E9765731C6E471DA /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		744A908DDB0606A6430C4AAB /* ScanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanViewModel.swift; sourceTree = "<group>"; };
+		78CEC552540FA09B7DC38A85 /* RelayClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayClient.swift; sourceTree = "<group>"; };
+		7D98F2CE5662171EA3FF9376 /* InboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxView.swift; sourceTree = "<group>"; };
+		AC2361CDC3F35D31BC424F1B /* InboxViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxViewModel.swift; sourceTree = "<group>"; };
+		AD4A930D7D6728BC1F63B5B2 /* SkaldInboxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkaldInboxTests.swift; sourceTree = "<group>"; };
+		B287B660B5B92BD92A9C0439 /* SkaldTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SkaldTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B77C8DBEB5EC9D7861788919 /* NotificationServiceExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = NotificationServiceExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C7E7822D46167D366C543A2E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		CC30548CFFE5AA70FB06D295 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		D643860DE181535FB37FC483 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		D9577A8CAFA15848D33DBB82 /* SkaldApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkaldApp.swift; sourceTree = "<group>"; };
+		E01F0A83CCC5D727344D66BD /* Skald.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Skald.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E3109A3BEC5D546E2268DD7F /* CryptoEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoEngine.swift; sourceTree = "<group>"; };
+		ED854AE8ABAA88A69C4AB7CF /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		EDC8B8A139059FB192B687AA /* Payloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Payloads.swift; sourceTree = "<group>"; };
+		FEABD44947172107D2FF3C56 /* CryptoConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoConstants.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		09215D94064EDBE191D0CE30 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B77C8DBEB5EC9D7861788919 /* NotificationServiceExtension.appex */,
+				E01F0A83CCC5D727344D66BD /* Skald.app */,
+				B287B660B5B92BD92A9C0439 /* SkaldTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		096E2A56D8BF2BAA62EE1392 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				99FAD042E828E936A47B6EA9 /* Crypto */,
+				3EEC59A57E7407E94C993EC4 /* Model */,
+				96CA55587E7F1E6614470231 /* Net */,
+				B14AA7D12E75CB53ACD2D6CA /* Store */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		1DBAEFCDE6B28A2A4FF69AD9 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				6FB7BDBC0343CCCF95A710D7 /* AppDelegate.swift */,
+				D9577A8CAFA15848D33DBB82 /* SkaldApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		2F5EA65B7F8A0FB47E1750F2 /* Pairing */ = {
+			isa = PBXGroup;
+			children = (
+				0244E4317247EBE038FF8530 /* PairingView.swift */,
+				12EDE3B38F5ABBA6E481BED1 /* PairingViewModel.swift */,
+			);
+			path = Pairing;
+			sourceTree = "<group>";
+		};
+		3EEC59A57E7407E94C993EC4 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				24B5AEB8809B0C91EDAD2EA2 /* PairingQR.swift */,
+				EDC8B8A139059FB192B687AA /* Payloads.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		412794B7377DFB4B90AE49A6 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				72265BDE27E8E846240AAD94 /* SettingsView.swift */,
+				D643860DE181535FB37FC483 /* SettingsViewModel.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		44BF36D2CA9088FBB68351A6 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				F8863C1D2CF382F88F2FCBE3 /* Inbox */,
+				2F5EA65B7F8A0FB47E1750F2 /* Pairing */,
+				EB91329DBD0CD44AB94FB4CD /* Scan */,
+				412794B7377DFB4B90AE49A6 /* Settings */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		802AD4ED1266FD57ED2EFE24 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				C7E7822D46167D366C543A2E /* Assets.xcassets */,
+				72B702F9E9765731C6E471DA /* InfoPlist.xcstrings */,
+				38C3AEDE3791974A1A2CF91D /* Localizable.xcstrings */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		96CA55587E7F1E6614470231 /* Net */ = {
+			isa = PBXGroup;
+			children = (
+				78CEC552540FA09B7DC38A85 /* RelayClient.swift */,
+			);
+			path = Net;
+			sourceTree = "<group>";
+		};
+		99FAD042E828E936A47B6EA9 /* Crypto */ = {
+			isa = PBXGroup;
+			children = (
+				FEABD44947172107D2FF3C56 /* CryptoConstants.swift */,
+				E3109A3BEC5D546E2268DD7F /* CryptoEngine.swift */,
+				24FB2A7F724195A5D54F5596 /* KeyManager.swift */,
+			);
+			path = Crypto;
+			sourceTree = "<group>";
+		};
+		B14AA7D12E75CB53ACD2D6CA /* Store */ = {
+			isa = PBXGroup;
+			children = (
+				ED854AE8ABAA88A69C4AB7CF /* KeychainStore.swift */,
+			);
+			path = Store;
+			sourceTree = "<group>";
+		};
+		C0196EACB3944D7F221FC520 /* NotificationServiceExtension */ = {
+			isa = PBXGroup;
+			children = (
+				CC30548CFFE5AA70FB06D295 /* NotificationService.swift */,
+			);
+			path = NotificationServiceExtension;
+			sourceTree = "<group>";
+		};
+		DBB9799C35B7DE65A931710E = {
+			isa = PBXGroup;
+			children = (
+				C0196EACB3944D7F221FC520 /* NotificationServiceExtension */,
+				DEE6DF8099187289207304D6 /* SkaldInbox */,
+				E6635471D78D51D397C610BD /* SkaldInboxTests */,
+				09215D94064EDBE191D0CE30 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		DEE6DF8099187289207304D6 /* SkaldInbox */ = {
+			isa = PBXGroup;
+			children = (
+				1DBAEFCDE6B28A2A4FF69AD9 /* App */,
+				096E2A56D8BF2BAA62EE1392 /* Core */,
+				44BF36D2CA9088FBB68351A6 /* Features */,
+				802AD4ED1266FD57ED2EFE24 /* Resources */,
+			);
+			path = SkaldInbox;
+			sourceTree = "<group>";
+		};
+		E6635471D78D51D397C610BD /* SkaldInboxTests */ = {
+			isa = PBXGroup;
+			children = (
+				AD4A930D7D6728BC1F63B5B2 /* SkaldInboxTests.swift */,
+			);
+			path = SkaldInboxTests;
+			sourceTree = "<group>";
+		};
+		EB91329DBD0CD44AB94FB4CD /* Scan */ = {
+			isa = PBXGroup;
+			children = (
+				0C3AD21ADB0046A172A95C84 /* ScanView.swift */,
+				744A908DDB0606A6430C4AAB /* ScanViewModel.swift */,
+			);
+			path = Scan;
+			sourceTree = "<group>";
+		};
+		F8863C1D2CF382F88F2FCBE3 /* Inbox */ = {
+			isa = PBXGroup;
+			children = (
+				2B0D5E0EE6F0B81736B41293 /* ApprovalCard.swift */,
+				4AF47F69B68665B1A21B76DF /* ClarificationCard.swift */,
+				7D98F2CE5662171EA3FF9376 /* InboxView.swift */,
+				AC2361CDC3F35D31BC424F1B /* InboxViewModel.swift */,
+				0CB264D700B7F053965417E2 /* RejectReasonView.swift */,
+			);
+			path = Inbox;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		17DE59105849DAA59D945E13 /* SkaldTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 71654C4A0A83C1C87E3696D6 /* Build configuration list for PBXNativeTarget "SkaldTests" */;
+			buildPhases = (
+				5533F683C8C2C4683B30D4C6 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D5A692175EA961A1EB536448 /* PBXTargetDependency */,
+			);
+			name = SkaldTests;
+			packageProductDependencies = (
+			);
+			productName = SkaldTests;
+			productReference = B287B660B5B92BD92A9C0439 /* SkaldTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		18A1E449C123A13E583347E3 /* NotificationServiceExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B715B9436A52B3FE1C1BC8C6 /* Build configuration list for PBXNativeTarget "NotificationServiceExtension" */;
+			buildPhases = (
+				9DA5C03D202B742A696C790B /* Sources */,
+				A482EC19E8D71E407B6796E7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NotificationServiceExtension;
+			packageProductDependencies = (
+			);
+			productName = NotificationServiceExtension;
+			productReference = B77C8DBEB5EC9D7861788919 /* NotificationServiceExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		A54634FF2E03722E50F790B9 /* Skald */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A3256D4C59BD8493B1979AB8 /* Build configuration list for PBXNativeTarget "Skald" */;
+			buildPhases = (
+				FABB7EE6EE5DF6C282DAB600 /* Sources */,
+				53F2FBD28985CB1552BBF6F4 /* Resources */,
+				CFC2AAFECCB60E9FA6293F30 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BB34D23CD64F0FD3984C642C /* PBXTargetDependency */,
+			);
+			name = Skald;
+			packageProductDependencies = (
+			);
+			productName = Skald;
+			productReference = E01F0A83CCC5D727344D66BD /* Skald.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0CB564F0894156F04E0E3BAA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					17DE59105849DAA59D945E13 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+					18A1E449C123A13E583347E3 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+					A54634FF2E03722E50F790B9 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = C088F819A66283C58AE1FEED /* Build configuration list for PBXProject "Skald" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+				it,
+			);
+			mainGroup = DBB9799C35B7DE65A931710E;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 09215D94064EDBE191D0CE30 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				18A1E449C123A13E583347E3 /* NotificationServiceExtension */,
+				A54634FF2E03722E50F790B9 /* Skald */,
+				17DE59105849DAA59D945E13 /* SkaldTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		53F2FBD28985CB1552BBF6F4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EA744F17D163BEA356CE57E9 /* Assets.xcassets in Resources */,
+				B0761E65040479F82DDB6D47 /* InfoPlist.xcstrings in Resources */,
+				CCDF9FD230A13DEA88B42654 /* Localizable.xcstrings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A482EC19E8D71E407B6796E7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D00AA0E226CE65DA1C72DF39 /* Localizable.xcstrings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5533F683C8C2C4683B30D4C6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				687A5AF7A9A62E088ACAB895 /* SkaldInboxTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9DA5C03D202B742A696C790B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				52F81F0CAD626A229BF763CD /* CryptoConstants.swift in Sources */,
+				32505FC9FD65C0E3E5ECDD74 /* CryptoEngine.swift in Sources */,
+				A7DC33C5A43AB3BCF2548062 /* KeyManager.swift in Sources */,
+				D4B88F432199E7D931F68D2D /* KeychainStore.swift in Sources */,
+				1A8F9B10688710468047791D /* NotificationService.swift in Sources */,
+				26ECB2A1F1BDC464D2637404 /* PairingQR.swift in Sources */,
+				CE74D930DA55AA55DDD0EB71 /* Payloads.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FABB7EE6EE5DF6C282DAB600 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CFE20C65E4E791373486F41E /* AppDelegate.swift in Sources */,
+				4954A4623669A95DBC6FBACC /* ApprovalCard.swift in Sources */,
+				514D3836B43F96E4A66AA024 /* ClarificationCard.swift in Sources */,
+				A391339CFC8C0E0876185231 /* CryptoConstants.swift in Sources */,
+				9B0ABA47B9C97C15F7E8F0E6 /* CryptoEngine.swift in Sources */,
+				9A67123FA54A088B1EBF5BB4 /* InboxView.swift in Sources */,
+				2509367AC1C4E0CE61C2CA53 /* InboxViewModel.swift in Sources */,
+				D11014672DB63C787012E2F8 /* KeyManager.swift in Sources */,
+				1A38F7810B8C1FA8A89B640B /* KeychainStore.swift in Sources */,
+				A34ED79076376DFF65A7953F /* PairingQR.swift in Sources */,
+				A0EF140D74CF43AB60596AD1 /* PairingView.swift in Sources */,
+				3861918F9502A93836966F6F /* PairingViewModel.swift in Sources */,
+				68C4B71FF4435CB6F41B3083 /* Payloads.swift in Sources */,
+				2D0B6939F7B882442B6A5DB7 /* RejectReasonView.swift in Sources */,
+				5AE49CC2A5413B90CF10E0BE /* RelayClient.swift in Sources */,
+				86AD222B41D7AB3CD9A9E52F /* ScanView.swift in Sources */,
+				494684805A381EF1AAE80482 /* ScanViewModel.swift in Sources */,
+				D74D4D1D2EADECB5ED675E5D /* SettingsView.swift in Sources */,
+				AF39AA4F7B70CDB45A228E39 /* SettingsViewModel.swift in Sources */,
+				19BA81B163E3FFBC2BC48814 /* SkaldApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BB34D23CD64F0FD3984C642C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 18A1E449C123A13E583347E3 /* NotificationServiceExtension */;
+			targetProxy = 9E21F43D32DDB02EF987CCE0 /* PBXContainerItemProxy */;
+		};
+		D5A692175EA961A1EB536448 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A54634FF2E03722E50F790B9 /* Skald */;
+			targetProxy = 9B4539B531D80D70D086AB2B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1757976EB5EF4A5E95A4C28C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = NO;
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		1AA44165A474B4935564C7BE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = SkaldInbox/Resources/Skald.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SkaldInbox/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = net.skaldagent.inbox;
+				PRODUCT_NAME = Skald;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		7212F9F9776C02F0164938B3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotificationServiceExtension/NotificationServiceExtension.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NotificationServiceExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.skaldagent.inbox.notification-extension";
+				PRODUCT_NAME = NotificationServiceExtension;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		804CC9BA42D1DA4E1703C8DD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotificationServiceExtension/NotificationServiceExtension.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NotificationServiceExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.skaldagent.inbox.notification-extension";
+				PRODUCT_NAME = NotificationServiceExtension;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		84C934C6E82FAF1CD53BAC6A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = SkaldInbox/Resources/Skald.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SkaldInbox/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = net.skaldagent.inbox;
+				PRODUCT_NAME = Skald;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B69FFA872BC7B42250633712 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = NO;
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D27EC896F41CDF3A7A695494 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = net.skaldagent.inbox.tests;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Skald.app/Skald";
+			};
+			name = Release;
+		};
+		F695B0645D1A7075C6D1EF9F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = net.skaldagent.inbox.tests;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Skald.app/Skald";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		71654C4A0A83C1C87E3696D6 /* Build configuration list for PBXNativeTarget "SkaldTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F695B0645D1A7075C6D1EF9F /* Debug */,
+				D27EC896F41CDF3A7A695494 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A3256D4C59BD8493B1979AB8 /* Build configuration list for PBXNativeTarget "Skald" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				84C934C6E82FAF1CD53BAC6A /* Debug */,
+				1AA44165A474B4935564C7BE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B715B9436A52B3FE1C1BC8C6 /* Build configuration list for PBXNativeTarget "NotificationServiceExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7212F9F9776C02F0164938B3 /* Debug */,
+				804CC9BA42D1DA4E1703C8DD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C088F819A66283C58AE1FEED /* Build configuration list for PBXProject "Skald" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B69FFA872BC7B42250633712 /* Debug */,
+				1757976EB5EF4A5E95A4C28C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0CB564F0894156F04E0E3BAA /* Project object */;
+}
