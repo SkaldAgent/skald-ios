@@ -39,6 +39,70 @@ enum PayloadKind: String, Codable, Equatable {
     case ack                   = "ack"
 }
 
+// MARK: - JSON value (for decoding arbitrary JSON objects)
+
+/// A recursive JSON value that can represent any JSON type.
+/// Used for the `arguments` field in ApprovalItem.
+indirect enum JSONValue: Codable, Equatable {
+    case string(String)
+    case number(Double)
+    case bool(Bool)
+    case null
+    case array([JSONValue])
+    case object([String: JSONValue])
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let str = try? container.decode(String.self) {
+            self = .string(str)
+        } else if let num = try? container.decode(Double.self) {
+            self = .number(num)
+        } else if let bool = try? container.decode(Bool.self) {
+            self = .bool(bool)
+        } else if container.decodeNil() {
+            self = .null
+        } else if let arr = try? container.decode([JSONValue].self) {
+            self = .array(arr)
+        } else if let obj = try? container.decode([String: JSONValue].self) {
+            self = .object(obj)
+        } else {
+            throw DecodingError.typeMismatch(
+                JSONValue.self,
+                DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "Unsupported JSON value"
+                )
+            )
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .string(let s):  try container.encode(s)
+        case .number(let n):  try container.encode(n)
+        case .bool(let b):    try container.encode(b)
+        case .null:           try container.encodeNil()
+        case .array(let a):   try container.encode(a)
+        case .object(let o):  try container.encode(o)
+        }
+    }
+
+    /// Human-readable representation for display.
+    var displayValue: String {
+        switch self {
+        case .string(let s): return s
+        case .number(let n):
+            return n == floor(n) ? String(Int(n)) : String(n)
+        case .bool(let b):   return b ? "true" : "false"
+        case .null:          return "null"
+        case .array(let a):  return a.map(\.displayValue).joined(separator: ", ")
+        case .object(let o): return o.map { "\($0.key): \($0.value.displayValue)" }
+                                 .joined(separator: ", ")
+        }
+    }
+}
+
 // MARK: - Agent → Client payloads
 
 /// An item in the pending-approvals list of an `inbox_update`.
@@ -48,6 +112,7 @@ struct ApprovalItem: Codable, Equatable {
     let agent_label: String
     let summary: String
     let detail: String?
+    let arguments: [String: JSONValue]?
     let created_at: Int64   // unix ms
 }
 
@@ -56,6 +121,7 @@ struct ClarificationItem: Codable, Equatable {
     let request_id: String
     let question: String
     let context: String?
+    let suggested_answers: [String]?
     let agent_label: String
     let created_at: Int64   // unix ms
 }

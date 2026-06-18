@@ -34,6 +34,33 @@ struct ClarificationCard: View {
                 .font(.footnote)
             }
 
+            if let suggestions = item.suggested_answers, !suggestions.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Quick replies")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    FlowLayout(spacing: 8) {
+                        ForEach(suggestions, id: \.self) { suggestion in
+                            Button {
+                                onSend(suggestion)
+                            } label: {
+                                Text(suggestion)
+                                    .font(.subheadline)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 7)
+                                    .background(
+                                        Capsule()
+                                            .fill(Color(.systemGray5))
+                                    )
+                                    .foregroundStyle(.primary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+
             VStack(alignment: .trailing, spacing: 8) {
                 TextField("Write here…", text: $answer, axis: .vertical)
                     .lineLimit(2...6)
@@ -88,5 +115,56 @@ struct ClarificationCard: View {
         onSend(text)
         answer = ""
         focused = false
+    }
+}
+
+// MARK: - Flow Layout (wrapping HStack)
+
+/// A simple flow layout that wraps its children into multiple rows when they
+/// exceed the available width.  Available from iOS 16+.
+struct FlowLayout: Layout {
+    let spacing: CGFloat
+
+    init(spacing: CGFloat = 8) {
+        self.spacing = spacing
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var height: CGFloat = 0
+        var currentX: CGFloat = 0
+        var currentRowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if currentX + size.width > maxWidth, currentX > 0 {
+                height += currentRowHeight + spacing
+                currentX = 0
+                currentRowHeight = 0
+            }
+            currentX += size.width + spacing
+            currentRowHeight = max(currentRowHeight, size.height)
+        }
+        height += currentRowHeight
+        return CGSize(width: maxWidth, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let maxWidth = bounds.width
+        var y: CGFloat = bounds.minY
+        var currentX: CGFloat = bounds.minX
+        var currentRowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if currentX + size.width > maxWidth + bounds.minX, currentX > bounds.minX {
+                y += currentRowHeight + spacing
+                currentX = bounds.minX
+                currentRowHeight = 0
+            }
+            subview.place(at: CGPoint(x: currentX, y: y), proposal: .unspecified)
+            currentX += size.width + spacing
+            currentRowHeight = max(currentRowHeight, size.height)
+        }
     }
 }
