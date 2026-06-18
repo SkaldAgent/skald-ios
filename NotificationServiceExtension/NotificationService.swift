@@ -122,18 +122,18 @@ final class NotificationService: UNNotificationServiceExtension {
                 return raw.withUnsafeBytes { $0.load(as: UInt64.self) }.bigEndian
             }()
 
-            // 4f. Decrypt + authenticate.  `updateLastSeen` fires only after a
-            //     successful open, and we use the atomic CAS variant so a
-            //     concurrent main-app update is honoured.
+            // 4f. Decrypt + authenticate.  We do NOT advance `recv_counter`
+            //     here: the queued message is also delivered to the app via
+            //     WS when the user opens it, and the app's own `engine.open`
+            //     must accept it (counter-replay would drop the whole inbox
+            //     update).  The NSE's job is just to render a rich alert;
+            //     persisting counter state is the app's responsibility.
             let plaintext = try engine.open(
                 nonce: nonce,
                 sealed: sealed,
                 direction: CryptoConstants.nonceDirAgentToClient,
                 lastSeenCounter: { lastSeen },
-                updateLastSeen: { newValue in
-                    _ = try? KeychainStore.shared.compareAndAdvanceCounter(
-                        for: KeychainStore.Key.recvCounter, to: newValue)
-                },
+                updateLastSeen: { _ in /* NSE: do not persist counter */ },
                 fromEd25519Pub: fromBytes,
                 toEd25519Pub: myEdRaw
             )
@@ -193,7 +193,7 @@ final class NotificationService: UNNotificationServiceExtension {
                 bestAttempt.body = n.body
                 bestAttempt.userInfo = ["kind": "notification"]
 
-            case .ack, .hello, .approvalResponse, .clarificationResponse, .logout:
+            case .ack, .hello, .inboxRequest, .approvalResponse, .clarificationResponse, .logout:
                 // These payloads don't carry a user-facing alert (most are
                 // client→agent or terminal messages).  Show a generic card.
                 showGeneric("unknown")

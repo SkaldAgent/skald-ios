@@ -10,7 +10,7 @@
 	</array>
 	<key>keychain-access-groups</key>
 	<array>
-		<string>group.net.skaldagent</string>
+		<string>$(AppIdentifierPrefix)group.net.skaldagent</string>
 	</array>
 </dict>
 </plist>

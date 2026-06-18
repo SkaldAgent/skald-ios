@@ -32,6 +32,7 @@ enum PayloadKind: String, Codable, Equatable {
     case inboxUpdate           = "inbox_update"
     case notification          = "notification"
     case hello                 = "hello"
+    case inboxRequest          = "inbox_request"
     case approvalResponse      = "approval_response"
     case clarificationResponse = "clarification_response"
     case logout                = "logout"
@@ -109,6 +110,17 @@ struct Hello: Codable, Equatable {
     let device_info: DeviceInfo
 }
 
+/// `kind: "inbox_request"` — client → agent (payloads.md §4.6).
+/// Sent on every (re)connection after `auth_ok` to request a fresh
+/// targeted `inbox_update` snapshot from the agent.  Idempotent and
+/// side-effect-free, so safe to send unconditionally.
+struct InboxRequest: Codable, Equatable {
+    let v: Int
+    let kind: String
+    let id: String
+    let ts: Int64
+}
+
 /// `kind: "approval_response"` — client → agent (payloads.md §4.2).
 struct ApprovalResponse: Codable, Equatable {
     let v: Int
@@ -152,6 +164,7 @@ enum Payload: Equatable {
     case notification(Notification)
     case ack(Ack)
     case hello(Hello)
+    case inboxRequest(InboxRequest)
     case approvalResponse(ApprovalResponse)
     case clarificationResponse(ClarificationResponse)
     case logout(LogoutPayload)
@@ -163,6 +176,7 @@ enum Payload: Equatable {
         case .notification(let p):          return EnvelopeBase(v: p.v, kind: p.kind, id: p.id, ts: p.ts)
         case .ack(let p):                   return EnvelopeBase(v: p.v, kind: p.kind, id: p.id, ts: p.ts)
         case .hello(let p):                 return EnvelopeBase(v: p.v, kind: p.kind, id: p.id, ts: p.ts)
+        case .inboxRequest(let p):          return EnvelopeBase(v: p.v, kind: p.kind, id: p.id, ts: p.ts)
         case .approvalResponse(let p):      return EnvelopeBase(v: p.v, kind: p.kind, id: p.id, ts: p.ts)
         case .clarificationResponse(let p): return EnvelopeBase(v: p.v, kind: p.kind, id: p.id, ts: p.ts)
         case .logout(let p):                return EnvelopeBase(v: p.v, kind: p.kind, id: p.id, ts: p.ts)
@@ -208,6 +222,9 @@ extension Payload: Codable {
         case .hello?:
             let p = try Hello(from: decoder)
             self = .hello(p)
+        case .inboxRequest?:
+            let p = try InboxRequest(from: decoder)
+            self = .inboxRequest(p)
         case .approvalResponse?:
             let p = try ApprovalResponse(from: decoder)
             self = .approvalResponse(p)
@@ -233,6 +250,7 @@ extension Payload: Codable {
         case .notification(let p):          try p.encode(to: encoder)
         case .ack(let p):                   try p.encode(to: encoder)
         case .hello(let p):                 try p.encode(to: encoder)
+        case .inboxRequest(let p):          try p.encode(to: encoder)
         case .approvalResponse(let p):      try p.encode(to: encoder)
         case .clarificationResponse(let p): try p.encode(to: encoder)
         case .logout(let p):                try p.encode(to: encoder)

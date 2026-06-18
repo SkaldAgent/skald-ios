@@ -57,6 +57,8 @@ final class InboxViewModel: ObservableObject {
     /// cancel the previous task and start a new one with fresh backoff.
     func connect() {
         guard let appState = appState, appState.phase != .notPaired else { return }
+        // Don't start a new session if we're already connected or connecting.
+        if connectionState == .connected || connectionState == .connecting { return }
         sessionTask?.cancel()
         connectionState = .connecting
         sessionTask = Task { [weak self] in
@@ -115,9 +117,17 @@ final class InboxViewModel: ObservableObject {
             attempt += 1
             do {
                 try await runOneSession()
-                // Clean exit (no error) — reset the backoff.
+                // Session ended cleanly (receive loop exited). The WS is
+                // closed but connectionState still says .connected. Reset
+                // the UI state so the banner reappears and the user can
+                // reconnect. Don't loop — the caller (view) will re-invoke
+                // connect() if it wants to reattach.
                 attempt = 0
+                connectionState = .disconnected
+                appState?.handleDisconnected()
+                return
             } catch is CancellationError {
+                connectionState = .disconnected
                 return
             } catch let err as SkaldError {
                 lastError = err.errorDescription
@@ -210,6 +220,22 @@ final class InboxViewModel: ObservableObject {
                 }
             }
 
+            // Every (re)connection: ask the agent for a fresh targeted
+            // `inbox_update` snapshot (payloads.md §4.6).  This makes the
+            // Inbox appear immediately on cold-start-from-notification
+            // instead of waiting for the next bus event.
+            if let engine = self.cryptoEngine {
+                let payload = InboxRequest(
+                    v: 1,
+                    kind: "inbox_request",
+                    id: UUID().uuidString.lowercased(),
+                    ts: Int64(Date().timeIntervalSince1970 * 1000)
+                )
+                if let data = try? JSONEncoder().encode(payload) {
+                    try? await c.sendE2E(plaintext: data, cryptoEngine: engine)
+                }
+            }
+
             // Drive the receive loop until the task is cancelled or the WS
             // errors.  The closure is @Sendable; we hop to the main actor
             // before mutating @Published state.
@@ -274,7 +300,7 @@ final class InboxViewModel: ObservableObject {
             approvals = u.approvals
             clarifications = u.clarifications
             badge = u.badge
-        case .notification, .ack, .hello, .approvalResponse, .clarificationResponse, .logout:
+        case .notification, .ack, .hello, .inboxRequest, .approvalResponse, .clarificationResponse, .logout:
             // We don't act on these (acks are informational; the rest are
             // our own outgoing messages that the relay echoes back).
             break

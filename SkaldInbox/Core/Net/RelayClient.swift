@@ -91,6 +91,11 @@ struct PongFrame: Encodable {
     let type = "pong"
 }
 
+/// A `ping` we send to keep the WS connection alive across NAT timeouts.
+struct PingFrame: Encodable {
+    let type = "ping"
+}
+
 /// An incoming E2E message envelope (relay-protocol.md §5.2).
 struct IncomingMessage: Codable, Equatable {
     let type: String
@@ -145,6 +150,7 @@ actor RelayClient {
     private var session: URLSession = .shared
     private var task: URLSessionWebSocketTask?
     private var receiveTask: Task<Void, Never>?
+    private var keepaliveTask: Task<Void, Never>?
 
     private let log = Logger(subsystem: "net.skaldagent.inbox", category: "RelayClient")
 
@@ -194,8 +200,8 @@ actor RelayClient {
         // Create a fresh session and task.
         let config = URLSessionConfiguration.default
         config.waitsForConnectivity = true
-        config.timeoutIntervalForRequest = 30
-        config.timeoutIntervalForResource = 60
+        config.timeoutIntervalForRequest = .infinity
+        config.timeoutIntervalForResource = .infinity
         let session = URLSession(configuration: config)
         self.session = session
         let task = session.webSocketTask(with: relayURL)
@@ -214,12 +220,17 @@ actor RelayClient {
         }
 
         state = .connected
+        log.debug("auth ok, state=connected, calling perform")
+
+        startKeepalive()
 
         if let perform = perform {
             try await perform(self)
         }
+        log.debug("perform returned, closing")
 
         await close()
+        log.debug("closed")
     }
 
     // MARK: - Auth
@@ -364,6 +375,44 @@ actor RelayClient {
         try await send(envelope)
     }
 
+    // MARK: - Keepalive
+
+    /// Start a background task that sends a `ping` frame every 25s so that
+    /// middleboxes (NAT, load balancers) don't drop the connection on their
+    /// idle timeout.  25s is comfortably below the typical 60-120s NAT
+    /// idle window.
+    private func startKeepalive() {
+        keepaliveTask?.cancel()
+        log.info("keepalive: starting (interval=25s)")
+        keepaliveTask = Task { [weak self] in
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(nanoseconds: 25_000_000_000)
+                } catch {
+                    // Cancelled.
+                    return
+                }
+                await self?.sendPingFrame()
+                if Task.isCancelled { return }
+            }
+        }
+    }
+
+    /// Build and send a `{"type":"ping"}` JSON frame.  Logs at info so it
+    /// shows in Console.app without enabling Debug Messages.
+    private func sendPingFrame() async {
+        guard let task = task else { return }
+        let ping = PingFrame()
+        do {
+            let data = try JSONEncoder().encode(ping)
+            guard let text = String(data: data, encoding: .utf8) else { return }
+            try await task.send(.string(text))
+            log.info("keepalive: ping sent")
+        } catch {
+            log.error("keepalive: ping send failed: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Receive loop
 
     /// Drive the receive loop until `cancel()` is called, the WS errors,
@@ -381,15 +430,19 @@ actor RelayClient {
         onMessage: @escaping @Sendable (IncomingMessage) async -> Void,
         onError: @escaping @Sendable (Error) -> Void
     ) async {
+        log.debug("receiveLoop: reading self.task")
         guard let task = task else {
+            log.error("receiveLoop: self.task is nil!")
             onError(SkaldError.relayError("not connected"))
             return
         }
+        log.debug("receiveLoop: task is non-nil, calling receiveLoopInner")
         await Self.receiveLoopInner(
             task: task,
             onMessage: onMessage,
             onError: onError
         )
+        log.debug("receiveLoop: receiveLoopInner returned")
     }
 
     /// Loop body.  Factored out so the per-actor state isn't held across
@@ -425,23 +478,27 @@ actor RelayClient {
                     }
                     // Unknown / non-message frames: ignored (forward-compat).
                 case .data:
-                    // Binary frames are not part of the Skald protocol;
-                    // the relay only emits text.  Ignore.
                     break
                 @unknown default:
                     break
                 }
             } catch {
+                os.Logger(subsystem: "net.skaldagent.inbox", category: "RelayClient")
+                    .error("receiveLoopInner: task.receive() threw: \(error.localizedDescription)")
                 onError(SkaldError.networkError(String(describing: error)))
                 return
             }
         }
+        os.Logger(subsystem: "net.skaldagent.inbox", category: "RelayClient")
+            .debug("receiveLoopInner: task cancelled, exiting loop")
     }
 
     // MARK: - Close
 
     func close() async {
         state = .closed
+        keepaliveTask?.cancel()
+        keepaliveTask = nil
         receiveTask?.cancel()
         receiveTask = nil
         task?.cancel(with: .normalClosure, reason: nil)
