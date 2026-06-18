@@ -2,7 +2,13 @@
 //  RelayClient.swift
 //  Skald
 //
-//  WebSocket client for the Skald relay (relay-protocol.md).
+//  WebSocket client for the Skald relay — v2 transport
+//
+//  V2 breaks V1 cleanly: every WebSocket frame is now a **binary** frame
+//  (opcode 0x2) carrying exactly one serialized `Skald_Relay_V2_RelayFrame`
+//  protobuf message.  V1 used JSON text frames with hex/base64 strings for
+//  the crypto envelope; V2 uses raw `bytes` everywhere.  See
+//  relay-protocol.md v2 §1 for the rationale.
 //
 //  The app uses this for two distinct flows:
 //   - role:"pairing"  : one-shot; open, auth, close
@@ -15,6 +21,7 @@
 //
 
 import Foundation
+import SwiftProtobuf
 import os
 
 // MARK: - Role
@@ -26,88 +33,52 @@ enum RelayRole: String, Codable, Equatable {
     case client  = "client"
 }
 
-// MARK: - Auth frame shapes (relay-protocol.md §4)
+// MARK: - Incoming frame shapes (relay-protocol.md v2 §3, §4)
 
-/// `auth` frame for the `agent` role.  Not used by the app but defined here
-/// for protocol completeness.
-struct AuthAgent: Encodable {
-    let type = "auth"
-    let role = "agent"
-    let agent_ed25519_pub: String
-    let signature: String
+/// An incoming E2E `Message` envelope (relay-protocol.md v2 §3.2).
+///
+/// All fields are **raw bytes** (NOT base64/hex).  V1 used hex strings
+/// for `from`/`nonce` and base64 for `ciphertext`; V2 is binary
+/// end-to-end (relay-protocol.md v2 §1).
+struct IncomingMessage: Sendable, Equatable {
+    /// 32B raw ed25519 public key of the sender.  The relay rewrites
+    /// `to`→`from` on delivery (relay-protocol.md v2 §3.2).
+    let from: Data
+    /// 12B raw AEAD nonce (DIR ‖ counter, big-endian).
+    let nonce: Data
+    /// Raw `ct ‖ tag` (no nonce).  Decrypt with `CryptoEngine.open`.
+    let ciphertext: Data
+    /// `true` if the relay routed this on the live (route-or-fail) channel.
+    let live: Bool
 }
 
-/// `auth` frame for the `pairing` role.
-struct AuthPairing: Encodable {
-    let type = "auth"
-    let role = "pairing"
-    let namespace_id: String
-    let pairing_token: String
-    let client_ed25519_pub: String
-    let client_x25519_pub: String
-    let device_token: String?
-    let platform = "ios"
-    let signature: String
+/// Notice that a `Message{live:true}` could not be routed because the
+/// destination peer was offline (relay-protocol.md v2 §3).  The relay
+/// did NOT queue and did NOT push.
+struct PeerOfflineNotice: Sendable, Equatable {
+    /// 32B raw ed25519 public key of the recipient that was offline.
+    let peer: Data
 }
 
-/// `auth` frame for the `client` role.
-struct AuthClient: Encodable {
-    let type = "auth"
-    let role = "client"
-    let namespace_id: String
-    let client_ed25519_pub: String
-    let device_token: String?
-    let platform = "ios"
-    let signature: String
+/// Status of a peer in the namespace (relay-protocol.md v2 §4).
+enum PresenceStatus: Sendable, Equatable {
+    case online
+    case offline
+    /// A status we don't recognise — carries the raw enum value.
+    case other(Int)
 }
 
-// MARK: - Control frames we receive
-
-struct ChallengeFrame: Decodable {
-    let type: String
-    let nonce: String   // hex 64 (32B)
-}
-
-struct AuthOk: Decodable {
-    let type: String
-    let role: String
-    let namespace_id: String
-}
-
-struct AuthErrorFrame: Decodable {
-    let type: String
-    let code: String
-    let message: String?
-}
-
-struct ErrorFrame: Decodable {
-    let type: String
-    let code: String
-    let message: String?
-}
-
-/// A `pong` reply we send in response to a `ping`.
-struct PongFrame: Encodable {
-    let type = "pong"
-}
-
-/// A `ping` we send to keep the WS connection alive across NAT timeouts.
-struct PingFrame: Encodable {
-    let type = "ping"
-}
-
-/// An incoming E2E message envelope (relay-protocol.md §5.2).
-struct IncomingMessage: Codable, Equatable {
-    let type: String
-    let from: String         // ed25519 pub hex of sender
-    let nonce: String        // hex 24
-    let ciphertext: String   // base64 of ct‖tag
-    let timestamp: String?   // ISO-8601 advisory
+/// A `PresenceEvent` from the relay (relay-protocol.md v2 §4).
+struct PresenceEventInfo: Sendable, Equatable {
+    /// 32B raw ed25519 public key of the peer whose status changed.
+    let pubkey: Data
+    let status: PresenceStatus
 }
 
 // MARK: - RelayClient
 
-/// A thin async/await wrapper over `URLSessionWebSocketTask`.
+/// A thin async/await wrapper over `URLSessionWebSocketTask` for the V2
+/// protobuf transport (relay-protocol.md v2).
 ///
 /// Implemented as an `actor`:
 ///   - The receive loop runs concurrently with auth/send; an actor makes
@@ -136,14 +107,14 @@ actor RelayClient {
     let role: RelayRole
     let namespaceIdHex: String?
     let pairingTokenHex: String?
-    let clientEd25519Pub: String
-    let clientX25519Pub: String
-    /// The agent's ed25519 public key (hex).  Used as the `to` field in E2E
-    /// `message` envelopes (relay-protocol.md §5.1).  Required for the
-    /// `sendE2E` path; ignored otherwise.
+    let clientEd25519Pub: String   // hex (raw 32B)
+    let clientX25519Pub: String   // hex (raw 32B)
+    /// The agent's ed25519 public key (hex).  Used as the `peer` field
+    /// (the `to` address) in E2E `Message` envelopes
+    /// (relay-protocol.md v2 §3.2).  Required for the `sendE2E` path;
+    /// ignored otherwise.
     let agentEd25519Pub: String?
     let deviceToken: String?
-    let platform: String = "ios"
 
     // MARK: - Internals
 
@@ -167,6 +138,9 @@ actor RelayClient {
     {
         // Force `/v1/ws` on the URL path and strip any query string (the
         // namespace_id is NEVER in the query string per relay-protocol.md).
+        // NOTE: the v2 transport (protobuf) reuses the v1 endpoint path —
+        // the relay only routes `/v1/ws` (skald-relay-server lib.rs); the
+        // "v2" is the wire encoding, not the URL. See v2/relay-protocol.md.
         var comps = URLComponents(url: relayURL, resolvingAgainstBaseURL: false)
             ?? URLComponents()
         comps.path = "/v1/ws"
@@ -209,7 +183,7 @@ actor RelayClient {
         task.resume()
 
         do {
-            try await authenticate(task: task)
+            try await authenticate()
         } catch {
             state = .failed(String(describing: error))
             task.cancel(with: .goingAway, reason: nil)
@@ -233,31 +207,22 @@ actor RelayClient {
         log.debug("closed")
     }
 
-    // MARK: - Auth
+    // MARK: - Auth (relay-protocol.md v2 §2)
 
-    private func authenticate(task: URLSessionWebSocketTask) async throws {
+    /// Run the challenge/response handshake.
+    ///
+    /// 1. Read `RelayFrame.challenge` (32B nonce).
+    /// 2. Sign `AUTH_DOMAIN ‖ 0x00 ‖ nonce` with the client ed25519 key.
+    /// 3. Send the role-specific `Auth` variant with the signature.
+    /// 4. Read `RelayFrame.auth_ok` (success) or `RelayFrame.auth_error`
+    ///    (throws `SkaldError.relayError`).
+    private func authenticate() async throws {
         state = .authenticating
 
         // 1. Read the challenge.
-        let challengeText = try await receiveText(task: task)
-        let challenge: ChallengeFrame
-        do {
-            challenge = try JSONDecoder().decode(ChallengeFrame.self,
-                                                 from: Data(challengeText.utf8))
-        } catch {
-            throw SkaldError.relayError("bad challenge frame")
-        }
-        guard challenge.type == "challenge" else {
-            throw SkaldError.relayError("expected challenge, got \(challenge.type)")
-        }
-        let nonceRaw: Data
-        do {
-            nonceRaw = try Hex.decode(challenge.nonce)
-        } catch {
-            throw SkaldError.relayError("bad challenge nonce")
-        }
+        let nonceRaw = try await receiveChallengeNonce()
         guard nonceRaw.count == 32 else {
-            throw SkaldError.relayError("challenge nonce must be 32B")
+            throw SkaldError.relayError("challenge nonce must be 32B (got \(nonceRaw.count))")
         }
 
         // 2. Sign the challenge.
@@ -267,73 +232,93 @@ actor RelayClient {
             challengeNonceRaw: nonceRaw
         )
 
-        // 3. Send the role-specific auth frame.
+        // 3. Build the role-specific `Auth` and send it.
+        let auth = try makeAuth(signature: signature, seed: seed)
+        var frame = Skald_Relay_V2_RelayFrame()
+        frame.auth = auth
+        try await sendFrame(frame)
+
+        // 4. Read `auth_ok` or `auth_error`.
+        let reply = try await receiveFrame()
+        switch reply.frame {
+        case .authOk:
+            return
+        case .authError(let err):
+            throw SkaldError.relayError("auth_error \(err.code): \(err.message)")
+        default:
+            throw SkaldError.relayError("unexpected auth reply")
+        }
+    }
+
+    /// Build the role-specific `Auth` protobuf message.  `signature` is on
+    /// the common outer field per spec.  `seed` is reused to derive the
+    /// agent pubkey in the (unused-by-app) `.agent` path.
+    private func makeAuth(signature: Data, seed: Data) throws -> Skald_Relay_V2_Auth {
+        var auth = Skald_Relay_V2_Auth()
+        auth.signature = signature
         switch role {
         case .agent:
-            // Not used by the app; included for protocol completeness.  The
-            // agent pubkey is derived from the local seed.
+            // Not used by the app; included for protocol completeness.
             let kp = try KeyManager.shared.deriveKeys(seed: seed)
-            let agentEd = kp.signing.publicKey.rawRepresentation
-            let frame = AuthAgent(
-                agent_ed25519_pub: Hex.encode(agentEd),
-                signature: Hex.encode(signature)
-            )
-            try await sendText(task: task, encodable: frame)
+            var agent = Skald_Relay_V2_AuthAgent()
+            agent.agentEd25519Pub = kp.signing.publicKey.rawRepresentation
+            auth.agent = agent
         case .pairing:
-            guard let ns = namespaceIdHex, let token = pairingTokenHex else {
+            guard let nsHex = namespaceIdHex, let tokenHex = pairingTokenHex else {
                 throw SkaldError.relayError("pairing requires namespace_id and pairing_token")
             }
-            let frame = AuthPairing(
-                namespace_id: ns,
-                pairing_token: token,
-                client_ed25519_pub: clientEd25519Pub,
-                client_x25519_pub: clientX25519Pub,
-                device_token: deviceToken,
-                signature: Hex.encode(signature)
-            )
-            try await sendText(task: task, encodable: frame)
+            let nsRaw     = try Hex.decode(nsHex)
+            let tokenRaw  = try Hex.decode(tokenHex)
+            let clientEd  = try Hex.decode(clientEd25519Pub)
+            let clientX   = try Hex.decode(clientX25519Pub)
+            guard nsRaw.count == 32 else {
+                throw SkaldError.relayError("namespace_id must be 32B (got \(nsRaw.count))")
+            }
+            guard tokenRaw.count == 32 else {
+                throw SkaldError.relayError("pairing_token must be 32B (got \(tokenRaw.count))")
+            }
+            guard clientEd.count == 32 else {
+                throw SkaldError.relayError("client_ed25519_pub must be 32B (got \(clientEd.count))")
+            }
+            guard clientX.count == 32 else {
+                throw SkaldError.relayError("client_x25519_pub must be 32B (got \(clientX.count))")
+            }
+            var pairing = Skald_Relay_V2_AuthPairing()
+            pairing.namespaceID = nsRaw
+            pairing.clientEd25519Pub = clientEd
+            pairing.clientX25519Pub = clientX
+            pairing.pairingToken = tokenRaw
+            pairing.deviceToken = deviceToken ?? ""
+            pairing.platform = .ios
+            auth.pairing = pairing
         case .client:
-            guard let ns = namespaceIdHex else {
+            guard let nsHex = namespaceIdHex else {
                 throw SkaldError.relayError("client auth requires namespace_id")
             }
-            let frame = AuthClient(
-                namespace_id: ns,
-                client_ed25519_pub: clientEd25519Pub,
-                device_token: deviceToken,
-                signature: Hex.encode(signature)
-            )
-            try await sendText(task: task, encodable: frame)
+            let nsRaw    = try Hex.decode(nsHex)
+            let clientEd = try Hex.decode(clientEd25519Pub)
+            guard nsRaw.count == 32 else {
+                throw SkaldError.relayError("namespace_id must be 32B (got \(nsRaw.count))")
+            }
+            guard clientEd.count == 32 else {
+                throw SkaldError.relayError("client_ed25519_pub must be 32B (got \(clientEd.count))")
+            }
+            var client = Skald_Relay_V2_AuthClient()
+            client.namespaceID = nsRaw
+            client.clientEd25519Pub = clientEd
+            client.deviceToken = deviceToken ?? ""
+            client.platform = .ios
+            auth.client = client
         }
-
-        // 4. Read auth_ok / auth_error.
-        let replyText = try await receiveText(task: task)
-        if let ok = try? JSONDecoder().decode(AuthOk.self,
-                                              from: Data(replyText.utf8)),
-           ok.type == "auth_ok"
-        {
-            return
-        }
-        if let err = try? JSONDecoder().decode(AuthErrorFrame.self,
-                                               from: Data(replyText.utf8)),
-           err.type == "auth_error"
-        {
-            throw SkaldError.relayError("auth_error \(err.code): \(err.message ?? "")")
-        }
-        throw SkaldError.relayError("unexpected auth reply")
+        return auth
     }
 
     // MARK: - Send
 
-    /// Encode and send a Codable frame as a JSON text message.
-    func send<T: Encodable>(_ frame: T) async throws {
-        guard let task = task else {
-            throw SkaldError.relayError("not connected")
-        }
-        try await sendText(task: task, encodable: frame)
-    }
-
-    /// Encrypt `plaintext` with the given `CryptoEngine`, build a
-    /// `message` envelope (relay-protocol.md §5.1), and send it.
+    /// Encrypt `plaintext` with the given `CryptoEngine`, build a V2
+    /// `Message{ciphertext, nonce, peer, live}` envelope
+    /// (relay-protocol.md v2 §3.2), wrap it in a `RelayFrame`, and send
+    /// it as a binary WebSocket frame.
     ///
     /// The send counter is atomically incremented in the Keychain BEFORE
     /// the message leaves the wire (crypto.md §6.1: persist before send).
@@ -341,7 +326,17 @@ actor RelayClient {
     /// that is intentional (anti-replay), and the receiver will simply skip
     /// a counter slot (recoverable because the next snapshot re-syncs
     /// state).
-    func sendE2E(plaintext: Data, cryptoEngine: CryptoEngine) async throws {
+    ///
+    /// - Parameter live: when `true`, the message is routed on the
+    ///   route-or-fail live channel (relay-protocol.md v2 §3).  If the
+    ///   destination peer is offline, the relay responds with
+    ///   `PeerOffline` and does NOT queue or push.  Set `live = true` for
+    ///   pull-of-current-state traffic (e.g. `inbox_request`); leave
+    ///   `false` for event-driven notifications that must reach an
+    ///   offline client (store-and-forward + push).  Defaults to `false`.
+    func sendE2E(plaintext: Data,
+                 cryptoEngine: CryptoEngine,
+                 live: Bool = false) async throws {
         // Atomically claim the next counter value.
         let nextCounter = try KeychainStore.shared.incrementCounter(
             for: KeychainStore.Key.sendCounter
@@ -352,35 +347,40 @@ actor RelayClient {
             counterSource: { nextCounter }
         )
 
-        // The recipient's ed25519 pub.  Per the spec this is the value the
-        // relay uses for routing inside the namespace.  The app-side caller
-        // (PairingViewModel) has access to `agent_ed25519_pub` from the QR
-        // and stores it in the Keychain; we pass it through the
+        // The recipient's ed25519 pub (the `peer` / `to` field per
+        // relay-protocol.md v2 §3.2).  The app-side caller
+        // (PairingViewModel) has access to `agent_ed25519_pub` from the
+        // QR and stores it in the Keychain; we pass it through the
         // `RelayClient` config.
-        guard let agentEd = agentEd25519Pub else {
+        guard let agentEdHex = agentEd25519Pub else {
             throw SkaldError.relayError("agent_ed25519_pub not configured")
         }
-
-        struct OutgoingMessage: Encodable {
-            let type = "message"
-            let to: String
-            let nonce: String
-            let ciphertext: String
+        let peer = try Hex.decode(agentEdHex)
+        guard peer.count == 32 else {
+            throw SkaldError.relayError("agent_ed25519_pub must be 32B (got \(peer.count))")
         }
-        let envelope = OutgoingMessage(
-            to: agentEd,
-            nonce: Hex.encode(nonce),
-            ciphertext: Base64.encode(sealed)
-        )
-        try await send(envelope)
+
+        var msg = Skald_Relay_V2_Message()
+        msg.ciphertext = sealed
+        msg.nonce = nonce
+        msg.peer = peer
+        msg.live = live
+        var frame = Skald_Relay_V2_RelayFrame()
+        frame.message = msg
+        try await sendFrame(frame)
     }
 
-    // MARK: - Keepalive
+    // MARK: - Keepalive (native WS ping/pong — relay-protocol.md v2 §1)
 
-    /// Start a background task that sends a `ping` frame every 25s so that
-    /// middleboxes (NAT, load balancers) don't drop the connection on their
-    /// idle timeout.  25s is comfortably below the typical 60-120s NAT
-    /// idle window.
+    /// Start a background task that pings the WS every 25s so that
+    /// middleboxes (NAT, load balancers) don't drop the connection on
+    /// their idle timeout.  25s is comfortably below the typical 60-120s
+    /// NAT idle window.
+    ///
+    /// The V1 code used a protobuf `{"type":"ping"}` frame; V2 uses
+    /// **native WebSocket pings** (handled transparently by URLSession —
+    /// we never see them in the receive loop, and URLSession auto-replies
+    /// with pongs when the relay pings us).
     private func startKeepalive() {
         keepaliveTask?.cancel()
         log.info("keepalive: starting (interval=25s)")
@@ -392,24 +392,26 @@ actor RelayClient {
                     // Cancelled.
                     return
                 }
-                await self?.sendPingFrame()
                 if Task.isCancelled { return }
+                await self?.sendPing()
             }
         }
     }
 
-    /// Build and send a `{"type":"ping"}` JSON frame.  Logs at info so it
-    /// shows in Console.app without enabling Debug Messages.
-    private func sendPingFrame() async {
+    /// Send a native WebSocket ping.  URLSession responds automatically;
+    /// the `pongReceiveHandler` is called when the relay's pong arrives
+    /// (or with an error if the WS is dead).
+    private func sendPing() async {
         guard let task = task else { return }
-        let ping = PingFrame()
-        do {
-            let data = try JSONEncoder().encode(ping)
-            guard let text = String(data: data, encoding: .utf8) else { return }
-            try await task.send(.string(text))
-            log.info("keepalive: ping sent")
-        } catch {
-            log.error("keepalive: ping send failed: \(error.localizedDescription)")
+        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            task.sendPing { [log] error in
+                if let error = error {
+                    log.error("keepalive: ping failed: \(error.localizedDescription, privacy: .public)")
+                } else {
+                    log.info("keepalive: ping ok")
+                }
+                cont.resume()
+            }
         }
     }
 
@@ -419,15 +421,23 @@ actor RelayClient {
     /// or the surrounding `Task` is cancelled.  Returns only on a terminal
     /// error (delivered to `onError`) or when the loop is cancelled.
     ///
-    /// - `onMessage`: invoked for each incoming `message` envelope.  The
-    ///   caller is responsible for AES-GCM decryption (CryptoEngine).
-    /// - `onError`:   invoked once for a terminal error, then the loop
-    ///   returns.
+    /// - `onMessage`:       invoked for each `RelayFrame.message`.
+    /// - `onPeerOffline`:   invoked for each `RelayFrame.peer_offline`
+    ///                      (a `live` recipient was offline — relay did NOT
+    ///                      queue or push).
+    /// - `onPresenceEvent`: invoked for each `RelayFrame.presence_event`.
+    /// - `onError`:         invoked once for a terminal error, then the
+    ///                      loop returns.
     ///
-    /// Callers typically wrap this in their own `Task { ... }` so they can
-    /// cancel it on `viewWillDisappear`, on Logout, etc.
+    /// Native WebSocket pings and the auto-replies are handled by
+    /// URLSession and never appear here.
+    ///
+    /// Callers typically wrap this in their own `Task { ... }` so they
+    /// can cancel it on `viewWillDisappear`, on Logout, etc.
     func receiveLoop(
         onMessage: @escaping @Sendable (IncomingMessage) async -> Void,
+        onPeerOffline: @escaping @Sendable (PeerOfflineNotice) async -> Void,
+        onPresenceEvent: @escaping @Sendable (PresenceEventInfo) async -> Void,
         onError: @escaping @Sendable (Error) -> Void
     ) async {
         log.debug("receiveLoop: reading self.task")
@@ -439,7 +449,10 @@ actor RelayClient {
         log.debug("receiveLoop: task is non-nil, calling receiveLoopInner")
         await Self.receiveLoopInner(
             task: task,
+            log: log,
             onMessage: onMessage,
+            onPeerOffline: onPeerOffline,
+            onPresenceEvent: onPresenceEvent,
             onError: onError
         )
         log.debug("receiveLoop: receiveLoopInner returned")
@@ -449,48 +462,107 @@ actor RelayClient {
     /// long suspends (better cancellation granularity).
     private static func receiveLoopInner(
         task: URLSessionWebSocketTask,
+        log: Logger,
         onMessage: @escaping @Sendable (IncomingMessage) async -> Void,
+        onPeerOffline: @escaping @Sendable (PeerOfflineNotice) async -> Void,
+        onPresenceEvent: @escaping @Sendable (PresenceEventInfo) async -> Void,
         onError: @escaping @Sendable (Error) -> Void
     ) async {
         while !Task.isCancelled {
             do {
                 let raw = try await task.receive()
                 switch raw {
-                case .string(let s):
-                    // Ping → JSON pong (relay-protocol.md §8).
-                    if s.contains("\"type\":\"ping\"") {
-                        let pong = PongFrame()
-                        if let data = try? JSONEncoder().encode(pong),
-                           let text = String(data: data, encoding: .utf8)
-                        {
-                            try? await task.send(.string(text))
-                        }
+                case .data(let bytes):
+                    // V2: every binary frame is one serialized
+                    // `RelayFrame` protobuf message.
+                    let frame: Skald_Relay_V2_RelayFrame
+                    do {
+                        frame = try Skald_Relay_V2_RelayFrame(serializedBytes: bytes)
+                    } catch {
+                        log.error("receiveLoopInner: failed to parse RelayFrame (\(bytes.count)B): \(error.localizedDescription, privacy: .public)")
                         continue
                     }
-                    // Try to decode as an incoming E2E message.
-                    if let incoming = try? JSONDecoder().decode(
-                        IncomingMessage.self, from: Data(s.utf8))
-                    {
-                        if incoming.type == "message" {
-                            await onMessage(incoming)
-                            continue
-                        }
-                    }
-                    // Unknown / non-message frames: ignored (forward-compat).
-                case .data:
-                    break
+                    await Self.dispatchFrame(
+                        frame,
+                        onMessage: onMessage,
+                        onPeerOffline: onPeerOffline,
+                        onPresenceEvent: onPresenceEvent
+                    )
+                case .string(let s):
+                    // V1 sent JSON text frames; V2 only uses binary.  If
+                    // we see text, the relay is misconfigured (or someone
+                    // is talking to a v1 endpoint by mistake).  Log and
+                    // ignore — the spec mandates a binary transport and
+                    // we will not try to parse JSON.
+                    let preview = String(s.prefix(80))
+                    log.warning("receiveLoopInner: ignoring unexpected text frame (\(s.count)B): \(preview, privacy: .public)")
                 @unknown default:
-                    break
+                    // Future-proof: any new `Message` cases the SDK might
+                    // add are ignored.  The relay cannot escalate our
+                    // privileges via a new frame type, so silence is
+                    // safe.
+                    log.warning("receiveLoopInner: ignoring unknown WS message case")
                 }
             } catch {
-                os.Logger(subsystem: "net.skaldagent.inbox", category: "RelayClient")
-                    .error("receiveLoopInner: task.receive() threw: \(error.localizedDescription)")
+                log.error("receiveLoopInner: task.receive() threw: \(error.localizedDescription, privacy: .public)")
                 onError(SkaldError.networkError(String(describing: error)))
                 return
             }
         }
-        os.Logger(subsystem: "net.skaldagent.inbox", category: "RelayClient")
-            .debug("receiveLoopInner: task cancelled, exiting loop")
+        log.debug("receiveLoopInner: task cancelled, exiting loop")
+    }
+
+    /// Dispatch a parsed `RelayFrame` to the appropriate callback.
+    /// Control frames (challenge, auth_*, authorize*, pairing_*,
+    /// client_paired, error, presence_request, presence_list) are not
+    /// expected during the receive loop (auth is handled in
+    /// `authenticate` before the loop runs); they are dropped silently.
+    private static func dispatchFrame(
+        _ frame: Skald_Relay_V2_RelayFrame,
+        onMessage: @escaping @Sendable (IncomingMessage) async -> Void,
+        onPeerOffline: @escaping @Sendable (PeerOfflineNotice) async -> Void,
+        onPresenceEvent: @escaping @Sendable (PresenceEventInfo) async -> Void
+    ) async {
+        switch frame.frame {
+        case .message(let msg):
+            // Validate `peer` length (32B ed25519 pub).  The relay
+            // MUST do this server-side (relay-protocol.md v2 §2), but a
+            // bad relay shouldn't be able to crash us.
+            guard msg.peer.count == 32 else { return }
+            let incoming = IncomingMessage(
+                from: msg.peer,
+                nonce: msg.nonce,
+                ciphertext: msg.ciphertext,
+                live: msg.live
+            )
+            await onMessage(incoming)
+        case .peerOffline(let notice):
+            guard notice.peer.count == 32 else { return }
+            await onPeerOffline(PeerOfflineNotice(peer: notice.peer))
+        case .presenceEvent(let ev):
+            guard ev.pubkey.count == 32 else { return }
+            let status: PresenceStatus
+            switch ev.status {
+            case .online:                  status = .online
+            case .offline:                 status = .offline
+            case .unspecified:             status = .other(0)
+            case .UNRECOGNIZED(let i):     status = .other(i)
+            }
+            await onPresenceEvent(PresenceEventInfo(pubkey: ev.pubkey, status: status))
+        case .challenge,
+             .auth, .authOk, .authError,
+             .authorize, .authorizeOk,
+             .pairingStart, .pairingReady, .pairingStop, .pairingStopOk,
+             .clientPaired,
+             .error,
+             .presenceRequest, .presenceList:
+            // Control frames — not expected during the receive loop.
+            return
+        case nil:
+            // Empty oneof — should not happen, but a misbehaving relay
+            // cannot escalate our privileges by sending an empty frame.
+            return
+        }
     }
 
     // MARK: - Close
@@ -508,30 +580,50 @@ actor RelayClient {
 
     // MARK: - Frame I/O helpers
 
-    private func receiveText(task: URLSessionWebSocketTask) async throws -> String {
+    /// Receive one WebSocket message and parse it as a `RelayFrame`.
+    /// V2 only uses binary frames, so a text frame here is an error.
+    private func receiveFrame() async throws -> Skald_Relay_V2_RelayFrame {
+        guard let task = task else {
+            throw SkaldError.relayError("not connected")
+        }
         let raw = try await task.receive()
         switch raw {
-        case .string(let s):
-            return s
-        case .data(let d):
-            guard let s = String(data: d, encoding: .utf8) else {
-                throw SkaldError.relayError("non-utf8 frame")
+        case .data(let bytes):
+            do {
+                return try Skald_Relay_V2_RelayFrame(serializedBytes: bytes)
+            } catch {
+                throw SkaldError.relayError("malformed RelayFrame")
             }
-            return s
+        case .string:
+            throw SkaldError.relayError("unexpected text frame in v2")
         @unknown default:
-            throw SkaldError.relayError("unexpected ws frame")
+            throw SkaldError.relayError("unexpected WS message case")
         }
     }
 
-    private func sendText<T: Encodable>(task: URLSessionWebSocketTask,
-                                        encodable: T) async throws
-    {
-        let encoder = JSONEncoder()
-        // Frames are small; the relay doesn't care about field order.
-        let data = try encoder.encode(encodable)
-        guard let text = String(data: data, encoding: .utf8) else {
-            throw SkaldError.relayError("non-utf8 encode")
+    /// Read the first frame and return its challenge nonce (32B).  The
+    /// frame MUST be a `RelayFrame.challenge`.
+    private func receiveChallengeNonce() async throws -> Data {
+        let frame = try await receiveFrame()
+        switch frame.frame {
+        case .challenge(let ch):
+            return ch.nonce
+        default:
+            throw SkaldError.relayError("expected challenge")
         }
-        try await task.send(.string(text))
+    }
+
+    /// Serialize `frame` and send it as a binary WebSocket message.
+    private func sendFrame(_ frame: Skald_Relay_V2_RelayFrame) async throws {
+        guard let task = task else {
+            throw SkaldError.relayError("not connected")
+        }
+        let bytes: Data
+        do {
+            bytes = try frame.serializedData()
+        } catch {
+            throw SkaldError.relayError("failed to serialize RelayFrame: \(error.localizedDescription)")
+        }
+        try await task.send(.data(bytes))
     }
 }

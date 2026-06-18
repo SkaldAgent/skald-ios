@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		12BF9EA4F8C7F3C71B5CE372 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = 356C6A0078D911E95ECCC126 /* SwiftProtobuf */; };
 		19BA81B163E3FFBC2BC48814 /* SkaldApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9577A8CAFA15848D33DBB82 /* SkaldApp.swift */; };
 		1A38F7810B8C1FA8A89B640B /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED854AE8ABAA88A69C4AB7CF /* KeychainStore.swift */; };
 		1A8F9B10688710468047791D /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC30548CFFE5AA70FB06D295 /* NotificationService.swift */; };
@@ -30,7 +31,9 @@
 		A34ED79076376DFF65A7953F /* PairingQR.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24B5AEB8809B0C91EDAD2EA2 /* PairingQR.swift */; };
 		A391339CFC8C0E0876185231 /* CryptoConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEABD44947172107D2FF3C56 /* CryptoConstants.swift */; };
 		A7DC33C5A43AB3BCF2548062 /* KeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24FB2A7F724195A5D54F5596 /* KeyManager.swift */; };
+		A95083908CE397FB7C6BC01A /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = 99A2D1BE74DE2BDBD5D603BB /* SwiftProtobuf */; };
 		AF39AA4F7B70CDB45A228E39 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D643860DE181535FB37FC483 /* SettingsViewModel.swift */; };
+		B03280A0B68CE0EB44D6F5D3 /* relay_frame.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = F80C3E8CD1A9DFB1769E0CA3 /* relay_frame.pb.swift */; };
 		B0761E65040479F82DDB6D47 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 72B702F9E9765731C6E471DA /* InfoPlist.xcstrings */; };
 		CCDF9FD230A13DEA88B42654 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 38C3AEDE3791974A1A2CF91D /* Localizable.xcstrings */; };
 		CE74D930DA55AA55DDD0EB71 /* Payloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDC8B8A139059FB192B687AA /* Payloads.swift */; };
@@ -101,8 +104,28 @@
 		E3109A3BEC5D546E2268DD7F /* CryptoEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoEngine.swift; sourceTree = "<group>"; };
 		ED854AE8ABAA88A69C4AB7CF /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		EDC8B8A139059FB192B687AA /* Payloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Payloads.swift; sourceTree = "<group>"; };
+		F80C3E8CD1A9DFB1769E0CA3 /* relay_frame.pb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = relay_frame.pb.swift; sourceTree = "<group>"; };
 		FEABD44947172107D2FF3C56 /* CryptoConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoConstants.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3439D91A051E2CFDE83F3AC9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				12BF9EA4F8C7F3C71B5CE372 /* SwiftProtobuf in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		50E6105A7109E4B842E25F67 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A95083908CE397FB7C6BC01A /* SwiftProtobuf in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		09215D94064EDBE191D0CE30 /* Products */ = {
@@ -173,6 +196,22 @@
 			path = Features;
 			sourceTree = "<group>";
 		};
+		64D15555011AFCA6B84CA0A0 /* skald */ = {
+			isa = PBXGroup;
+			children = (
+				7FDC147F8BF50CE6287A5D96 /* relay */,
+			);
+			path = skald;
+			sourceTree = "<group>";
+		};
+		7FDC147F8BF50CE6287A5D96 /* relay */ = {
+			isa = PBXGroup;
+			children = (
+				F7E4474A2BAB79E0C6646E6B /* v2 */,
+			);
+			path = relay;
+			sourceTree = "<group>";
+		};
 		802AD4ED1266FD57ED2EFE24 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -186,6 +225,7 @@
 		96CA55587E7F1E6614470231 /* Net */ = {
 			isa = PBXGroup;
 			children = (
+				DDF56F279C1F3BA0D44350A8 /* Proto */,
 				78CEC552540FA09B7DC38A85 /* RelayClient.swift */,
 			);
 			path = Net;
@@ -227,6 +267,14 @@
 			);
 			sourceTree = "<group>";
 		};
+		DDF56F279C1F3BA0D44350A8 /* Proto */ = {
+			isa = PBXGroup;
+			children = (
+				64D15555011AFCA6B84CA0A0 /* skald */,
+			);
+			path = Proto;
+			sourceTree = "<group>";
+		};
 		DEE6DF8099187289207304D6 /* SkaldInbox */ = {
 			isa = PBXGroup;
 			children = (
@@ -253,6 +301,14 @@
 				744A908DDB0606A6430C4AAB /* ScanViewModel.swift */,
 			);
 			path = Scan;
+			sourceTree = "<group>";
+		};
+		F7E4474A2BAB79E0C6646E6B /* v2 */ = {
+			isa = PBXGroup;
+			children = (
+				F80C3E8CD1A9DFB1769E0CA3 /* relay_frame.pb.swift */,
+			);
+			path = v2;
 			sourceTree = "<group>";
 		};
 		F8863C1D2CF382F88F2FCBE3 /* Inbox */ = {
@@ -294,6 +350,7 @@
 			buildPhases = (
 				9DA5C03D202B742A696C790B /* Sources */,
 				A482EC19E8D71E407B6796E7 /* Resources */,
+				3439D91A051E2CFDE83F3AC9 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -301,6 +358,7 @@
 			);
 			name = NotificationServiceExtension;
 			packageProductDependencies = (
+				356C6A0078D911E95ECCC126 /* SwiftProtobuf */,
 			);
 			productName = NotificationServiceExtension;
 			productReference = B77C8DBEB5EC9D7861788919 /* NotificationServiceExtension.appex */;
@@ -312,6 +370,7 @@
 			buildPhases = (
 				FABB7EE6EE5DF6C282DAB600 /* Sources */,
 				53F2FBD28985CB1552BBF6F4 /* Resources */,
+				50E6105A7109E4B842E25F67 /* Frameworks */,
 				CFC2AAFECCB60E9FA6293F30 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -321,6 +380,7 @@
 			);
 			name = Skald;
 			packageProductDependencies = (
+				99A2D1BE74DE2BDBD5D603BB /* SwiftProtobuf */,
 			);
 			productName = Skald;
 			productReference = E01F0A83CCC5D727344D66BD /* Skald.app */;
@@ -359,6 +419,9 @@
 			);
 			mainGroup = DBB9799C35B7DE65A931710E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CD7D14842DEE67350331FBAD /* XCRemoteSwiftPackageReference "swift-protobuf" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 09215D94064EDBE191D0CE30 /* Products */;
 			projectDirPath = "";
@@ -439,6 +502,7 @@
 				D74D4D1D2EADECB5ED675E5D /* SettingsView.swift in Sources */,
 				AF39AA4F7B70CDB45A228E39 /* SettingsViewModel.swift in Sources */,
 				19BA81B163E3FFBC2BC48814 /* SkaldApp.swift in Sources */,
+				B03280A0B68CE0EB44D6F5D3 /* relay_frame.pb.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -761,6 +825,30 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CD7D14842DEE67350331FBAD /* XCRemoteSwiftPackageReference "swift-protobuf" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-protobuf";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.38.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		356C6A0078D911E95ECCC126 /* SwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD7D14842DEE67350331FBAD /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobuf;
+		};
+		99A2D1BE74DE2BDBD5D603BB /* SwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD7D14842DEE67350331FBAD /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobuf;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0CB564F0894156F04E0E3BAA /* Project object */;
 }

@@ -9,6 +9,7 @@
 //  extension-safe: no UIKit, no UserNotifications.
 //
 
+import Compression
 import CryptoKit
 import Foundation
 
@@ -150,9 +151,21 @@ final class CryptoEngine {
         } catch {
             throw SkaldError.invalidNonce
         }
+
+        // V2 framing (v2/framing.md §1): prepend `version(1) ‖ comp(1)` to the
+        // plaintext BEFORE AES-GCM sealing.  We always send `comp = 0x00`
+        // because our outgoing payloads are small JSON envelopes (well under
+        // 1 KiB) — spec §2.3 says the zlib header overhead would negate the
+        // gain below that threshold.
+        var framed = Data()
+        framed.reserveCapacity(2 + plaintext.count)
+        framed.append(CryptoConstants.framingVersion)
+        framed.append(CryptoConstants.compNone)
+        framed.append(plaintext)
+
         let box: AES.GCM.SealedBox
         do {
-            box = try AES.GCM.seal(plaintext, using: aesKey,
+            box = try AES.GCM.seal(framed, using: aesKey,
                                    nonce: gcmNonce, authenticating: aad)
         } catch {
             throw SkaldError.decryptionFailed
@@ -246,16 +259,72 @@ final class CryptoEngine {
         } catch {
             throw SkaldError.invalidNonce
         }
-        let plaintext: Data
+        let framed: Data
         do {
-            plaintext = try AES.GCM.open(box, using: aesKey, authenticating: aad)
+            framed = try AES.GCM.open(box, using: aesKey, authenticating: aad)
         } catch {
             // Per crypto.md §12: do NOT distinguish the cause in the error.
             throw SkaldError.decryptionFailed
         }
 
-        // Persist the new counter ONLY after a successful decryption.
+        // V2 framing strip (v2/framing.md §3).  After AES-GCM we have
+        // `framed = version(1) ‖ comp(1) ‖ body`.  Reject anything malformed
+        // with the same generic `.decryptionFailed` so the caller (and the
+        // user-visible message) cannot distinguish a framing error from an
+        // AEAD failure (crypto.md §12).
+        guard framed.count >= 2 else {
+            throw SkaldError.decryptionFailed
+        }
+        guard framed[0] == CryptoConstants.framingVersion else {
+            throw SkaldError.decryptionFailed
+        }
+        let comp = framed[1]
+        let compressed = framed.subdata(in: 2..<framed.count)
+
+        let body: Data
+        switch comp {
+        case CryptoConstants.compNone:
+            body = compressed
+        case CryptoConstants.compZlib:
+            body = try Self.zlibDecompress(compressed)
+        default:
+            // Unknown `comp` — discard (v2/framing.md §3.3).
+            throw SkaldError.decryptionFailed
+        }
+
+        // Persist the new counter ONLY after the framing is fully validated
+        // and we have JSON-ready bytes in hand.
         updateLastSeen(counter)
-        return plaintext
+        return body
+    }
+
+    // MARK: - Framing helpers (v2/framing.md)
+
+    /// Decode a zlib-wrapped (RFC 1950) DEFLATE stream using the iOS
+    /// `Compression` framework (`COMPRESSION_ZLIB`).
+    ///
+    /// `compression_decode_buffer` returns 0 both on error AND on a valid
+    /// empty output — but empty JSON payloads do not exist in our protocol,
+    /// so `decoded > 0` is a safe success check.
+    ///
+    /// For small payloads (~few KB) we allocate a generously oversized
+    /// output buffer (8× source, minimum 64 KiB) to avoid a two-pass loop
+    /// — that's cheap and well below the 512 KiB live-frame ceiling.
+    static func zlibDecompress(_ data: Data) throws -> Data {
+        let capacity = max(data.count * 8, 64 * 1024)
+        let dest = UnsafeMutablePointer<UInt8>.allocate(capacity: capacity)
+        defer { dest.deallocate() }
+        let decoded = data.withUnsafeBytes { src -> Int in
+            guard let srcPtr = src.bindMemory(to: UInt8.self).baseAddress else { return 0 }
+            return compression_decode_buffer(
+                dest, capacity,
+                srcPtr, data.count,
+                nil, COMPRESSION_ZLIB
+            )
+        }
+        guard decoded > 0 else {
+            throw SkaldError.decryptionFailed
+        }
+        return Data(bytes: dest, count: decoded)
     }
 }

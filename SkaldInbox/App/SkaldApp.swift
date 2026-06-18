@@ -216,6 +216,10 @@ struct MainTabView: View {
     @EnvironmentObject private var appState: AppState
     @StateObject private var inboxVM = InboxViewModel()
 
+    /// React to background → foreground so we re-open the WS session if it
+    /// went down while suspended.
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some View {
         TabView {
             NavigationStack {
@@ -239,6 +243,15 @@ struct MainTabView: View {
             // so the binding survives view rebuilds.
             inboxVM.attach(appState: appState)
             inboxVM.connect()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            // Coming back to the foreground: re-open the WS if it dropped
+            // while we were suspended (iOS tears WS sockets down in the
+            // background). `connect()` is idempotent — a no-op when already
+            // connected/connecting.
+            if newPhase == .active {
+                inboxVM.connect()
+            }
         }
     }
 }

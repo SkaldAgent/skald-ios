@@ -1,6 +1,6 @@
 # Skald — iOS Remote Control for Skald Agent
 
-**Skald** is an iOS app that lets you approve/reject tool calls and respond to clarification requests from your [Skald Agent](https://github.com/dguiducci/personal-agent) — all while Skald runs behind NAT at home.
+**Skald** is an iOS app that lets you approve/reject tool calls and respond to clarification requests from your Skald Agent — all while Skald runs behind NAT at home.
 
 ---
 
@@ -11,6 +11,7 @@ Skald (home)  ←WSS→  Relay (cloud)  ←WSS→  iPhone
    (agent)       E2E encrypted       (client)
 ```
 
+- **Binary protobuf transport (V2)**: messages encoded as protobuf `RelayFrame` over WebSocket, replacing V1's JSON-over-text. Supports presence detection (online/offline) and a live channel for route-or-fail inbox delivery.
 - **End-to-end encryption**: X25519 + Ed25519 + HKDF-SHA256 + AES-256-GCM (CryptoKit).
 - **Relay** is zero-trust: it routes opaque encrypted blobs and bridges APNs push — it never sees contents.
 - **Pairing** via QR code (contains relay URL, public keys, pairing token).
@@ -27,10 +28,11 @@ Skald (home)  ←WSS→  Relay (cloud)  ←WSS→  iPhone
 - **iOS 18**, SwiftUI, MVVM
 - **CryptoKit** — no external crypto dependencies
 - **URLSessionWebSocketTask** — native WebSocket client
+- **SwiftProtobuf** — protobuf serialization for V2 relay transport
 - **APNs** + Notification Service Extension + `UNNotificationAction`
 - **Keychain** (App Group) — shared seed & counters between app and NSE
 - **AVFoundation** — QR scanning
-- **Zero** third-party dependencies
+- **Zero** other third-party dependencies
 
 ## Screens
 
@@ -47,7 +49,7 @@ Skald/
 ├── App/                        # SwiftUI App + AppDelegate
 ├── Core/
 │   ├── Crypto/                 # CryptoConstants, KeyManager, CryptoEngine
-│   ├── Net/                    # RelayClient (WebSocket)
+│   ├── Net/                    # RelayClient (WebSocket), Proto/ (generated protobuf)
 │   ├── Store/                  # KeychainStore (App Group)
 │   └── Model/                  # Payloads, PairingQR (Codable)
 ├── Features/
@@ -63,19 +65,6 @@ Skald/
 ```
 not_paired  →  pairing  →  awaiting_authorization  →  connected / disconnected
 ```
-
-## Reference Specs
-
-All technical specs live at `/Users/dguiducci/rust/personal-agent/data/ios-app/`:
-
-| File | What |
-|------|------|
-| [index.md](https://github.com/dguiducci/personal-agent/blob/main/data/ios-app/index.md) | Architecture, threat model, encoding conventions |
-| [crypto.md](https://github.com/dguiducci/personal-agent/blob/main/data/ios-app/crypto.md) | Cryptographic contract (normative) |
-| [relay-protocol.md](https://github.com/dguiducci/personal-agent/blob/main/data/ios-app/relay-protocol.md) | WebSocket protocol frames |
-| [payloads.md](https://github.com/dguiducci/personal-agent/blob/main/data/ios-app/payloads.md) | E2E encrypted payload schemas |
-| [ios-app.md](https://github.com/dguiducci/personal-agent/blob/main/data/ios-app/ios-app.md) | Full iOS implementation guide |
-| [test-vectors.md](https://github.com/dguiducci/personal-agent/blob/main/data/ios-app/test-vectors.md) | Crypto test vectors (interop) |
 
 ---
 

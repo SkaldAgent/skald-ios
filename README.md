@@ -4,7 +4,7 @@
 </picture>
 <img alt="Swift 5.10" src="https://img.shields.io/badge/Swift-5.10-F05138?style=flat&logo=swift&logoColor=white">
 <img alt="CryptoKit" src="https://img.shields.io/badge/crypto-CryptoKit-1E8CBE?style=flat">
-<img alt="Dependencies" src="https://img.shields.io/badge/dependencies-0-44CC11?style=flat">
+<img alt="Dependencies" src="https://img.shields.io/badge/dependencies-SwiftProtobuf-44CC11?style=flat">
 <img alt="MIT" src="https://img.shields.io/badge/license-MIT-744c9c?style=flat">
 
 <p align="center">
@@ -35,6 +35,8 @@
 - **🔐 End-to-end encryption** — X25519 + Ed25519 + HKDF-SHA256 + AES-256-GCM. The relay never sees your data.
 - **📷 QR code pairing** — Scan a code on your desktop to pair. One-tap, no accounts.
 - **📡 Works behind NAT** — WebSocket relay bridges your agent at home to your phone. No port forwarding.
+- **🟢 Agent presence** — Know when your agent is online. Presence detection via V2 WebSocket protocol.
+- **📨 Live channel** — Inbox requests routed directly over the live WebSocket connection — no polling.
 
 <br>
 
@@ -98,7 +100,7 @@ xcodegen generate
 open Skald.xcodeproj
 ```
 
-No CocoaPods, no Swift Package Manager, no Carthage — hit **⌘B** and you're done.
+Only one external dependency via Swift Package Manager — **SwiftProtobuf** for protobuf serialization. XcodeGen handles the project file. Hit **⌘B** and you're done.
 
 <br>
 
@@ -126,7 +128,10 @@ Skald/
 │   │   ├── CryptoEngine.swift  # ECDH → HKDF → AES-256-GCM encrypt/decrypt
 │   │   └── CryptoConstants.swift  # Domain constants, nonce direction, error types
 │   ├── Net/
-│   │   └── RelayClient.swift   # WebSocket client (URLSessionWebSocketTask)
+│   │   ├── RelayClient.swift   # WebSocket client (binary WS + protobuf RelayFrame)
+│   │   └── Proto/              # Generated protobuf Swift types
+│   │       └── skald/relay/v2/
+│   │           └── relay_frame.pb.swift
 │   ├── Store/
 │   │   └── KeychainStore.swift # App Group keychain via Security.framework
 │   └── Model/
@@ -155,18 +160,20 @@ Skald/
 | Encryption | AES-256-GCM |
 | Nonce | Monotonic counter per direction (prevents replay) |
 | AAD | Binds `from_pubkey` + `to_pubkey` + `namespace_id` |
+| Plaintext framing (V2) | `0x01` ‖ `comp(1B)` ‖ `payload(JSON)` — version + compression header prepended before encryption |
 
 Full specs: [`data/ios-app/`](https://github.com/xavix-yo/skald/tree/main/data/ios-app) in the Skald Agent repo.
 
 ### Dependencies
 
-**Zero.** The entire app uses only Apple frameworks:
+**One external dependency** plus Apple frameworks:
 
-| Framework | Purpose |
+| Framework/Dependency | Purpose |
 |-----------|---------|
 | `SwiftUI` | UI |
 | `CryptoKit` | All cryptography (X25519, Ed25519, HKDF, AES-GCM) |
 | `Foundation` | Codable, WebSocket, Keychain |
+| `SwiftProtobuf` (external) | Protobuf serialization for relay transport (V2); crypto remains CryptoKit-native |
 | `AVFoundation` | QR scanning |
 | `UserNotifications` | Push registration, notification actions, NSE |
 | `Security` | Keychain (via `SecItem*`) |

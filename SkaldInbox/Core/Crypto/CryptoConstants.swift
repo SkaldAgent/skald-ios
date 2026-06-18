@@ -56,6 +56,19 @@ enum CryptoConstants {
 
     /// Direction prefix for the nonce: client → agent.
     static let nonceDirClientToAgent: [UInt8] = [0x00, 0x00, 0x00, 0x02]
+
+    /// V2 framing version byte (v2/framing.md §1).
+    /// Today always 1. An unknown version → the receiver discards with log.
+    static let framingVersion: UInt8 = 0x01
+
+    /// V2 framing `comp = 0x00`: no compression. Use this for every outgoing
+    /// payload (we only send small JSON envelopes; agent may send us compressed
+    /// `inbox_update` snapshots — we MUST be able to receive `comp=0x01`).
+    static let compNone: UInt8 = 0x00
+
+    /// V2 framing `comp = 0x01`: zlib / DEFLATE. The iOS Compression framework
+    /// exposes this as `COMPRESSION_ZLIB`.
+    static let compZlib: UInt8 = 0x01
 }
 
 // MARK: - SkaldError

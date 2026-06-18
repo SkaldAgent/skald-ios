@@ -4,6 +4,15 @@
 //
 //  Crypto interop tests against test-vectors.md §4.
 //
+//  NOTE (V2 transport migration): the V14 `sealed_a2c` vector and the
+//  hard-coded `AES.GCM.open(…)` path in `testSealOpenA2C` are written
+//  against the V1 *raw* plaintext.  After the v2/framing.md §1 framing
+//  change in `CryptoEngine`, the engine seals the FRAMED plaintext, so
+//  that direct AES.GCM.open assertion is expected to FAIL.  The fix
+//  (regenerate V14 with the framed plaintext, update the vector path to
+//  match) lands in the `tests-and-build` task.  This task only adds
+//  framing and is intentionally leaving the test as-is.
+//
 
 import XCTest
 import CryptoKit

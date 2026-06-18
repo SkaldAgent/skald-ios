@@ -45,6 +45,18 @@ final class InboxViewModel: ObservableObject {
     /// Last-seen receive counter (mirrored to Keychain after every open).
     private var recvCounter: UInt64 = 0
 
+    /// Agent presence — optimistic on a fresh session (matches V1 behaviour).
+    /// Flipped to `false` when we get `PeerOffline` or `PresenceEvent{OFFLINE}`
+    /// for the agent, back to `true` on `PresenceEvent{ONLINE}`.  The
+    /// `inbox_request` re-send on `ONLINE` is gated on this flag
+    /// (relay-protocol.md v2 §4).
+    private var agentOnline: Bool = true
+
+    /// Raw 32B ed25519 pub of the agent — cached on every `runOneSession`
+    /// from Keychain and used to filter `PresenceEvent`s to "is this the
+    /// agent, or some other peer in the namespace?"
+    private var agentEd25519Pub: Data?
+
     private let log = Logger(subsystem: "net.skaldagent.inbox", category: "InboxVM")
 
     func attach(appState: AppState) {
@@ -109,23 +121,27 @@ final class InboxViewModel: ObservableObject {
     // MARK: - Session loop
 
     /// Outer loop: open a session, run the receive loop, on exit wait
-    /// `backoff(n)` seconds (1, 2, 4, …, 60 + jitter) and try again.  Stops
-    /// when `disconnect()` cancels the surrounding `Task`.
+    /// `backoff(n)` seconds (1, 2, 4, …, 32 + jitter) and try again.  Stops
+    /// only when `disconnect()` cancels the surrounding `Task`
+    /// (relay-protocol.md v2 §8: the client reconnects with backoff).
     private func runSessionLoop() async {
         var attempt = 0
         while !Task.isCancelled {
-            attempt += 1
+            let startedAt = Date()
             do {
                 try await runOneSession()
-                // Session ended cleanly (receive loop exited). The WS is
-                // closed but connectionState still says .connected. Reset
-                // the UI state so the banner reappears and the user can
-                // reconnect. Don't loop — the caller (view) will re-invoke
-                // connect() if it wants to reattach.
-                attempt = 0
-                connectionState = .disconnected
-                appState?.handleDisconnected()
-                return
+                // `runOneSession` only returns once the receive loop ended:
+                // either `disconnect()` cancelled us, or the WS dropped
+                // underneath us. The receive loop reports transport errors via
+                // its `onError` callback and returns normally (it does NOT
+                // throw), so a network drop lands here — NOT in the catch
+                // blocks below. We must therefore treat a clean return as a
+                // disconnect that needs reconnecting, unless we were cancelled.
+                if Task.isCancelled {
+                    connectionState = .disconnected
+                    return
+                }
+                // WS dropped while still wanted → fall through to backoff.
             } catch is CancellationError {
                 connectionState = .disconnected
                 return
@@ -146,10 +162,19 @@ final class InboxViewModel: ObservableObject {
 
             if Task.isCancelled { return }
 
-            // Exponential backoff with ±20% jitter, capped at 60s.
-            let base = min(60, 1 << min(attempt - 1, 5))
+            // A session that stayed up for a while was "healthy": reset the
+            // backoff so the next drop reconnects quickly. A session that died
+            // almost immediately keeps climbing the backoff, avoiding a hot
+            // reconnect loop against a relay that's down or rejecting us.
+            if Date().timeIntervalSince(startedAt) > 30 {
+                attempt = 0
+            }
+
+            // Exponential backoff with ±20% jitter, capped at 32s.
+            let base = min(60, 1 << min(attempt, 5))
             let jitter = Double.random(in: 0.8...1.2)
             let delay = Double(base) * jitter
+            attempt += 1
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
         }
     }
@@ -179,6 +204,8 @@ final class InboxViewModel: ObservableObject {
             deviceToken: appState.deviceTokenHex
         )
         self.currentClient = client
+        // Cache the raw 32B agent ed25519 pub for presence-event filtering.
+        self.agentEd25519Pub = agentEd
 
         // Build the engine up front (needs the session to be authenticated
         // by the relay, but the engine itself is just a key-derivation
@@ -221,20 +248,11 @@ final class InboxViewModel: ObservableObject {
             }
 
             // Every (re)connection: ask the agent for a fresh targeted
-            // `inbox_update` snapshot (payloads.md §4.6).  This makes the
-            // Inbox appear immediately on cold-start-from-notification
-            // instead of waiting for the next bus event.
-            if let engine = self.cryptoEngine {
-                let payload = InboxRequest(
-                    v: 1,
-                    kind: "inbox_request",
-                    id: UUID().uuidString.lowercased(),
-                    ts: Int64(Date().timeIntervalSince1970 * 1000)
-                )
-                if let data = try? JSONEncoder().encode(payload) {
-                    try? await c.sendE2E(plaintext: data, cryptoEngine: engine)
-                }
-            }
+            // `inbox_update` snapshot (payloads.md §4.6, v2/relay-protocol.md
+            // §3.1).  Sent on the live channel: if the agent is offline the
+            // relay responds with `PeerOffline` and the next
+            // `PresenceEvent{ONLINE}` triggers a retry.
+            await self.sendInboxRequest()
 
             // Drive the receive loop until the task is cancelled or the WS
             // errors.  The closure is @Sendable; we hop to the main actor
@@ -243,6 +261,12 @@ final class InboxViewModel: ObservableObject {
             await c.receiveLoop(
                 onMessage: { msg in
                     await weakSelf.handleIncoming(msg)
+                },
+                onPeerOffline: { notice in
+                    await weakSelf.handlePeerOffline(notice)
+                },
+                onPresenceEvent: { event in
+                    await weakSelf.handlePresenceEvent(event)
                 },
                 onError: { err in
                     let descr = (err as? SkaldError)?.errorDescription
@@ -262,9 +286,11 @@ final class InboxViewModel: ObservableObject {
         guard let myEd = appState?.myEd25519Pub else { return }
 
         do {
-            let nonce = try Hex.decode(msg.nonce)
-            let sealed = try Base64.decode(msg.ciphertext)
-            let from = try Hex.decode(msg.from)
+            // V2: all crypto envelope fields are raw bytes end-to-end
+            // (relay-protocol.md v2 §1).  No more hex/base64 decoding.
+            let nonce = msg.nonce
+            let sealed = msg.ciphertext
+            let from = msg.from
 
             let plaintext = try engine.open(
                 nonce: nonce,
@@ -291,6 +317,59 @@ final class InboxViewModel: ObservableObject {
             lastError = String(localized: "Decryption: ") + (err.errorDescription ?? String(localized: "unknown error"))
         } catch {
             lastError = String(localized: "Decryption: ") + error.localizedDescription
+        }
+    }
+
+    // MARK: - Live-channel handlers (relay-protocol.md v2 §3, §4)
+
+    /// `PeerOffline{peer}` from the relay: the agent was offline when we
+    /// tried to `sendE2E(..., live: true)`, so the message was NOT queued
+    /// and NOT pushed.  Don't try to send again until we see
+    /// `PresenceEvent{ONLINE}` for the agent.
+    private func handlePeerOffline(_ notice: PeerOfflineNotice) async {
+        log.info("peer_offline received; marking agent offline")
+        agentOnline = false
+    }
+
+    /// A presence status change from the relay.  We only act on events
+    /// about the agent itself (not us, not other devices in the namespace).
+    /// On `ONLINE` we re-send the `inbox_request` so the agent's next
+    /// `inbox_update` lands on us immediately.
+    private func handlePresenceEvent(_ event: PresenceEventInfo) async {
+        // Filter to events about the agent.
+        guard let agentEd = agentEd25519Pub, !agentEd.isEmpty,
+              event.pubkey == agentEd else { return }
+        switch event.status {
+        case .online:
+            if !agentOnline {
+                log.info("PresenceEvent{ONLINE} for agent; re-sending inbox_request")
+                agentOnline = true
+                await sendInboxRequest()
+            } else {
+                // Idempotent: two ONLINE events in a row is a no-op.
+                log.debug("PresenceEvent{ONLINE} for agent already; ignoring")
+            }
+        case .offline:
+            log.info("PresenceEvent{OFFLINE} for agent")
+            agentOnline = false
+        case .other:
+            // Unknown status value: ignore.
+            break
+        }
+    }
+
+    /// Send a fresh `inbox_request` on the live channel.  Called on
+    /// (re)connect and on `PresenceEvent{ONLINE}` for the agent.
+    private func sendInboxRequest() async {
+        guard let client = currentClient, let engine = cryptoEngine else { return }
+        let payload = InboxRequest(
+            v: 1,
+            kind: "inbox_request",
+            id: UUID().uuidString.lowercased(),
+            ts: Int64(Date().timeIntervalSince1970 * 1000)
+        )
+        if let data = try? JSONEncoder().encode(payload) {
+            try? await client.sendE2E(plaintext: data, cryptoEngine: engine, live: true)
         }
     }
 
