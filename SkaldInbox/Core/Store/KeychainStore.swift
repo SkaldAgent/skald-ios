@@ -46,6 +46,11 @@ final class KeychainStore {
         static let recvCounter      = "skald.recv_counter"
         static let myEd25519Pub     = "skald.my_ed25519_pub"
         static let myX25519Pub      = "skald.my_x25519_pub"
+        /// Hex APNs device token. Persisted so a cold launch can send it on the
+        /// very first relay connect, before the async APNs re-registration
+        /// completes — otherwise we'd send an empty token and the relay would
+        /// drop our push routing (`MissingDeviceToken`).
+        static let deviceToken      = "skald.device_token"
     }
 
     // MARK: - Init
@@ -153,12 +158,13 @@ final class KeychainStore {
         lock.lock()
         defer { lock.unlock() }
 
-        let query: [String: Any] = [
+        var query: [String: Any] = [
             kSecClass as String:            kSecClassGenericPassword,
             kSecAttrService as String:      Self.service,
             kSecAttrAccount as String:      account,
             kSecAttrAccessGroup as String:  Self.accessGroup,
         ]
+        query[kSecUseDataProtectionKeychain as String] = true
         let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw SkaldError.keychainError(status)
@@ -171,12 +177,16 @@ final class KeychainStore {
         lock.lock()
         defer { lock.unlock() }
 
-        let query: [String: Any] = [
+        // NOTE: do NOT pass `kSecMatchLimit` here.  `SecItemDelete` already
+        // removes *every* item matching the query, and on iOS supplying
+        // `kSecMatchLimit` makes it fail with `errSecParam (-50)` — which
+        // previously left the whole pairing in the Keychain on logout.
+        var query: [String: Any] = [
             kSecClass as String:            kSecClassGenericPassword,
             kSecAttrService as String:      Self.service,
             kSecAttrAccessGroup as String:  Self.accessGroup,
-            kSecMatchLimit as String:       kSecMatchLimitAll,
         ]
+        query[kSecUseDataProtectionKeychain as String] = true
         let status = SecItemDelete(query as CFDictionary)
         // `errSecItemNotFound` is fine: nothing to delete.
         guard status == errSecSuccess || status == errSecItemNotFound else {

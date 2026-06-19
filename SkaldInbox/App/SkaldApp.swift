@@ -65,10 +65,16 @@ final class AppState: ObservableObject {
 
     @Published private(set) var phase: Phase
 
-    /// Hex-encoded APNs device token. Set by `AppDelegate` once `didRegister`
-    /// fires. Read by `RelayClient` during auth so the agent can route push
-    /// notifications to this device.
+    /// Hex-encoded APNs device token. Loaded from Keychain at launch and
+    /// refreshed by `AppDelegate` once `didRegister` fires. Read by
+    /// `RelayClient` during auth so the agent can route push notifications to
+    /// this device.
     @Published var deviceTokenHex: String?
+
+    /// Invoked by `AppDelegate` when the APNs token arrives or rotates after
+    /// the relay session is already up. The `InboxViewModel` wires this to a
+    /// reconnect so the relay learns the fresh token.
+    var onDeviceTokenChanged: (() -> Void)?
 
     /// The QR data that was last successfully scanned.  Kept on the state so
     /// `.awaitingAuth` can show the PairingView with the right metadata.
@@ -88,6 +94,9 @@ final class AppState: ObservableObject {
         } else {
             self.phase = .notPaired
         }
+        // Restore the last-known APNs token so the first relay connect after a
+        // cold launch sends it immediately, instead of an empty placeholder.
+        self.deviceTokenHex = (try? KeychainStore.shared.getString(for: KeychainStore.Key.deviceToken)) ?? nil
     }
 
     // MARK: - Phase transitions (called by the feature view-models)
@@ -139,6 +148,7 @@ final class AppState: ObservableObject {
     func didLogout() {
         lastPairingQR = nil
         deviceTokenHex = nil
+        try? KeychainStore.shared.delete(for: KeychainStore.Key.deviceToken)
         phase = .notPaired
     }
 
@@ -245,12 +255,25 @@ struct MainTabView: View {
             inboxVM.connect()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            // Coming back to the foreground: re-open the WS if it dropped
-            // while we were suspended (iOS tears WS sockets down in the
-            // background). `connect()` is idempotent — a no-op when already
-            // connected/connecting.
-            if newPhase == .active {
+            switch newPhase {
+            case .active:
+                // Coming back to the foreground: re-open the WS so we resume
+                // streaming events. `connect()` is idempotent — a no-op when
+                // already connected/connecting.
                 inboxVM.connect()
+            case .background:
+                // Going to the background: tear the WS down. We don't need a
+                // live stream while suspended — APNs pushes cover that — and
+                // keeping the session (+ 25s keepalive + reconnect-with-backoff
+                // loop) alive only accumulates memory/battery until iOS
+                // suspends us, which is what got the app jetsam-killed.
+                inboxVM.disconnect()
+            case .inactive:
+                // Transient (app switcher, notification center, incoming call).
+                // Don't churn the connection — wait for .background or .active.
+                break
+            @unknown default:
+                break
             }
         }
     }

@@ -59,8 +59,19 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
                      didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data)
     {
         let hex = deviceToken.map { String(format: "%02x", $0) }.joined()
+        // Persist immediately so the next cold launch can hand the token to the
+        // relay on the very first connect (APNs registration is async and
+        // normally completes *after* we've already opened the WS session).
+        try? KeychainStore.shared.setString(hex, for: KeychainStore.Key.deviceToken)
         Task { @MainActor in
-            self.appState?.deviceTokenHex = hex
+            guard let appState = self.appState else { return }
+            let changed = appState.deviceTokenHex != hex
+            appState.deviceTokenHex = hex
+            // If the token arrived (or rotated) after we already authenticated,
+            // the relay still has the old/empty token. Force a reconnect so the
+            // client handshake re-sends the fresh token; otherwise pushes keep
+            // failing with `MissingDeviceToken` until the next relaunch.
+            if changed { appState.onDeviceTokenChanged?() }
         }
     }
 

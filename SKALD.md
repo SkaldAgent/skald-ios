@@ -39,6 +39,9 @@ Skald (home)  ←WSS→  Relay (cloud)  ←WSS→  iPhone
 1. **ScanView** — QR code scanner (no pairing saved)
 2. **PairingView** — pairing progress / awaiting authorization
 3. **InboxView** — pending approvals + clarifications ✅❌
+   - Pull-to-refresh: pull down to send `inbox_request` to agent with 5s timeout
+   - Auto-reconnect with exponential backoff (no manual button)
+   - "Disconnected — retrying…" banner when offline
 4. **RejectReasonView** — reason text when rejecting
 5. **SettingsView** — connection status, logout
 
@@ -66,6 +69,31 @@ Skald/
 not_paired  →  pairing  →  awaiting_authorization  →  connected / disconnected
 ```
 
----
+## Deployment (CLI)
 
-*Generated 2026-06-17 — concise reference for the Skald iOS project.*
+Build + install on a connected iPhone from the terminal:
+
+```bash
+# 1. Regenerate the Xcode project (after changing project.yml)
+xcodegen generate
+
+# 2. Build for the connected device (filter output to avoid log spam)
+xcodebuild \
+  -project Skald.xcodeproj \
+  -scheme Skald \
+  -destination 'platform=iOS' \
+  -allowProvisioningUpdates \
+  build 2>&1 | grep -E "(error:|warning:|BUILD|FAILED|SUCCEEDED)" || true
+
+# 3. Find the built .app (it's under DerivedData with a hash)
+APP_PATH=$(ls -td ~/Library/Developer/Xcode/DerivedData/Skald-*/Build/Products/Debug-iphoneos/Skald.app 2>/dev/null | head -1)
+echo "$APP_PATH"
+
+# 4. Install on iPhone via ios-deploy
+ios-deploy --bundle "$APP_PATH"
+```
+
+**Prerequisites:** XcodeGen (`brew install xcodegen`), ios-deploy (`brew install ios-deploy`), iPhone connected via USB and unlocked.
+
+> The device ID is auto-detected by `ios-deploy` — no need to hardcode it.
+

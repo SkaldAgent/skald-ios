@@ -24,6 +24,13 @@ final class InboxViewModel: ObservableObject {
     @Published private(set) var clarifications: [ClarificationItem] = []
     @Published private(set) var badge: Int = 0
     @Published private(set) var connectionState: ConnectionState = .disconnected
+
+    /// True while a user-initiated pull-to-refresh is in flight.  Drives the
+    /// "Refreshing…" overlay in `InboxView` and is used (together with a
+    /// minimum visible duration inside `refresh()`) to make the
+    /// `.refreshable` gesture feel responsive.
+    @Published private(set) var isRefreshing: Bool = false
+
     @Published var lastError: String?
 
     /// Bumped externally (e.g. from SettingsView) to make the view re-fetch
@@ -52,6 +59,10 @@ final class InboxViewModel: ObservableObject {
     /// (relay-protocol.md v2 §4).
     private var agentOnline: Bool = true
 
+    /// Timestamp of the last received `inbox_update`. Used by `refresh()` to
+    /// detect a response even when counts haven't changed (e.g. empty inbox).
+    private var lastInboxUpdateAt: Date?
+
     /// Raw 32B ed25519 pub of the agent — cached on every `runOneSession`
     /// from Keychain and used to filter `PresenceEvent`s to "is this the
     /// agent, or some other peer in the namespace?"
@@ -61,6 +72,11 @@ final class InboxViewModel: ObservableObject {
 
     func attach(appState: AppState) {
         self.appState = appState
+        // When the APNs token arrives/rotates after we're already connected,
+        // tear down and reopen the session so the relay re-learns the token.
+        appState.onDeviceTokenChanged = { [weak self] in
+            Task { @MainActor in self?.reconnect() }
+        }
     }
 
     // MARK: - Lifecycle
@@ -78,6 +94,20 @@ final class InboxViewModel: ObservableObject {
         }
     }
 
+    /// Force a fresh session: cancel the current one and reconnect. Used when
+    /// the APNs device token arrives or rotates after we already authenticated,
+    /// so the relay handshake re-sends the new token.
+    func reconnect() {
+        guard let appState = appState, appState.phase != .notPaired else { return }
+        sessionTask?.cancel()
+        sessionTask = nil
+        let client = currentClient
+        currentClient = nil
+        Task { await client?.close() }
+        connectionState = .disconnected
+        connect()
+    }
+
     /// Stop the WS session.  Safe to call when already stopped.
     func disconnect() {
         sessionTask?.cancel()
@@ -87,6 +117,51 @@ final class InboxViewModel: ObservableObject {
         currentClient = nil
         Task { await client?.close() }
         appState?.handleDisconnected()
+    }
+
+    /// Manual refresh hook (pull-to-refresh).  Saves a snapshot of the current
+    /// inbox state, fires an `inbox_request` on the live channel, then polls
+    /// for up to ~5s waiting for a fresh `inbox_update` to land.  If nothing
+    /// arrives the agent is probably offline — surface that as `lastError`.
+    /// The session loop handles automatic reconnection, so this is purely a
+    /// user-initiated nudge.
+    ///
+    /// `isRefreshing` is held true for the whole call, and the call is
+    /// stretched to at least ~0.6s of wall-clock time.  Without that floor
+    /// the system `.refreshable` spinner (and the "Refreshing…" overlay) can
+    /// flash by in <200ms when an `inbox_update` lands on the first poll,
+    /// making the pull-to-refresh gesture feel unresponsive.
+    func refresh() async {
+        isRefreshing = true
+        let startedAt = Date()
+        let minVisibleDuration: TimeInterval = 0.6
+
+        let snapshotUpdateAt = lastInboxUpdateAt
+        await sendInboxRequest()
+        // Poll up to 25 × 200ms ≈ 5s for `applyPayload(.inboxUpdate)` to
+        // land.  We track the timestamp of the last update rather than
+        // comparing counts, so an agent that correctly responds with an
+        // unchanged (e.g. empty) inbox is not misreported as offline.
+        var didChange = false
+        for _ in 0..<25 {
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            if lastInboxUpdateAt != snapshotUpdateAt {
+                didChange = true
+                break
+            }
+        }
+        if !didChange {
+            lastError = String(localized: "Agent offline or timeout")
+        }
+        // Hold the spinner / banner for at least `minVisibleDuration` so the
+        // refresh feedback is actually noticeable.  When the underlying work
+        // already exceeded the budget this is a no-op.
+        let elapsed = Date().timeIntervalSince(startedAt)
+        let remaining = minVisibleDuration - elapsed
+        if remaining > 0 {
+            try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
+        }
+        isRefreshing = false
     }
 
     // MARK: - Approvals / Rejections / Answers
@@ -379,6 +454,7 @@ final class InboxViewModel: ObservableObject {
             approvals = u.approvals
             clarifications = u.clarifications
             badge = u.badge
+            lastInboxUpdateAt = Date()
         case .notification, .ack, .hello, .inboxRequest, .approvalResponse, .clarificationResponse, .logout:
             // We don't act on these (acks are informational; the rest are
             // our own outgoing messages that the relay echoes back).

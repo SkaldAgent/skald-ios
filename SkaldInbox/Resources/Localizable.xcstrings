@@ -1,6 +1,5 @@
 {
   "sourceLanguage" : "en",
-  "version" : "1.0",
   "strings" : {
     "—" : {
       "comment" : "Em-dash placeholder shown in Settings phase label and device fields when no value is available.",
@@ -16,6 +15,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "—"
+          }
+        }
+      }
+    },
+    "✅ Approve" : {
+      "comment" : "UNNotificationAction title for the approve action (kept short with the emoji icon for the locked-screen action sheet).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✅ Approve"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✅ Approva"
+          }
+        }
+      }
+    },
+    "✏️ Reply" : {
+      "comment" : "UNNotificationAction title for the respond action on a clarification push (kept short with the emoji icon).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✏️ Reply"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✏️ Rispondi"
+          }
+        }
+      }
+    },
+    "❌ Reject" : {
+      "comment" : "UNNotificationAction title for the destructive reject action (kept short with the emoji icon for the locked-screen action sheet).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "❌ Reject"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "❌ Rifiuta"
+          }
+        }
+      }
+    },
+    "💬 Clarification" : {
+      "comment" : "NSE: title of the rich push for a clarification (emoji + noun).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "💬 Clarification"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "💬 Chiarimento"
           }
         }
       }
@@ -55,6 +126,9 @@
           }
         }
       }
+    },
+    "Agent offline or timeout" : {
+
     },
     "Approve" : {
       "comment" : "ApproveCard button label and UNNotificationAction title.",
@@ -182,24 +256,6 @@
         }
       }
     },
-    "Clears pairing credentials from this device. The Skald desktop will need to authorize this device again." : {
-      "comment" : "SettingsView footer text under the Logout button, explaining the consequences of logging out.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Clears pairing credentials from this device. The Skald desktop will need to authorize this device again."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cancella le credenziali di pairing dal dispositivo. Il desktop Skald dovrà autorizzare di nuovo questo device."
-          }
-        }
-      }
-    },
     "Clarification" : {
       "comment" : "ClarificationCard header label, identifying the card as a pending clarification. NSE also uses this string as the title for a clarification push (with the 💬 emoji prefix).",
       "extractionState" : "manual",
@@ -232,6 +288,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chiarimenti"
+          }
+        }
+      }
+    },
+    "Clears pairing credentials from this device. The Skald desktop will need to authorize this device again." : {
+      "comment" : "SettingsView footer text under the Logout button, explaining the consequences of logging out.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clears pairing credentials from this device. The Skald desktop will need to authorize this device again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancella le credenziali di pairing dal dispositivo. Il desktop Skald dovrà autorizzare di nuovo questo device."
           }
         }
       }
@@ -974,6 +1048,9 @@
         }
       }
     },
+    "Quick replies" : {
+
+    },
     "Ready" : {
       "comment" : "PairingViewModel initial status before performPairing() runs.",
       "extractionState" : "manual",
@@ -1027,6 +1104,9 @@
           }
         }
       }
+    },
+    "Refreshing…" : {
+
     },
     "Reject" : {
       "comment" : "RejectReasonView navigationTitle, ApprovalCard destructive button label, and UNNotificationAction title for the destructive reject action.",
@@ -1405,78 +1485,7 @@
           }
         }
       }
-    },
-    "❌ Reject" : {
-      "comment" : "UNNotificationAction title for the destructive reject action (kept short with the emoji icon for the locked-screen action sheet).",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "❌ Reject"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "❌ Rifiuta"
-          }
-        }
-      }
-    },
-    "✅ Approve" : {
-      "comment" : "UNNotificationAction title for the approve action (kept short with the emoji icon for the locked-screen action sheet).",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "✅ Approve"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "✅ Approva"
-          }
-        }
-      }
-    },
-    "✏️ Reply" : {
-      "comment" : "UNNotificationAction title for the respond action on a clarification push (kept short with the emoji icon).",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "✏️ Reply"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "✏️ Rispondi"
-          }
-        }
-      }
-    },
-    "💬 Clarification" : {
-      "comment" : "NSE: title of the rich push for a clarification (emoji + noun).",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "💬 Clarification"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "💬 Chiarimento"
-          }
-        }
-      }
     }
-  }
+  },
+  "version" : "1.0"
 }

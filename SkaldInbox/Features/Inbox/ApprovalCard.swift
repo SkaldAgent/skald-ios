@@ -14,50 +14,43 @@ struct ApprovalCard: View {
     let onReject: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             header
 
             Text(item.summary)
-                .font(.body)
+                .font(.footnote)
                 .foregroundStyle(.primary)
 
             if let args = item.arguments, !args.isEmpty {
                 if item.tool_name == "execute_cmd", let command = args["command"] {
-                    // Special case: show command in monospace box
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Command")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(command.displayValue)
-                            .font(.system(.body, design: .monospaced))
-                            .foregroundStyle(.primary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color(.systemGray6))
-                            )
-                    }
+                    Text(command.displayValue)
+                        .font(.system(.footnote, design: .monospaced))
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color(.systemGray6))
+                        )
                 } else {
-                    // Generic: show arguments as key/value list
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 5) {
                         ForEach(Array(args.keys.sorted()), id: \.self) { key in
                             if let value = args[key] {
                                 HStack(alignment: .top, spacing: 8) {
                                     Text(key)
-                                        .font(.caption.weight(.medium))
+                                        .font(.caption2.weight(.medium))
                                         .foregroundStyle(.secondary)
-                                        .frame(minWidth: 60, alignment: .trailing)
+                                        .frame(minWidth: 52, alignment: .trailing)
                                     Text(value.displayValue)
-                                        .font(.body)
+                                        .font(.footnote)
                                         .foregroundStyle(.primary)
                                 }
                             }
                         }
                     }
-                    .padding(12)
+                    .padding(10)
                     .background(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: 6)
                             .fill(Color(.systemGray6))
                     )
                 }
@@ -74,7 +67,7 @@ struct ApprovalCard: View {
                 .font(.footnote)
             }
 
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 Button {
                     onApprove()
                 } label: {
@@ -82,7 +75,9 @@ struct ApprovalCard: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.roundedRectangle(radius: 4))
                 .tint(.green)
+                .controlSize(.small)
 
                 Button(role: .destructive) {
                     onReject()
@@ -91,25 +86,22 @@ struct ApprovalCard: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
+                .buttonBorderShape(.roundedRectangle(radius: 4))
+                .controlSize(.small)
             }
-            .padding(.top, 4)
+            .padding(.top, 2)
         }
-        .padding(16)
+        .padding(10)
         .background(
-            RoundedRectangle(cornerRadius: 14)
+            RoundedRectangle(cornerRadius: 5)
                 .fill(Color(.secondarySystemGroupedBackground))
         )
     }
 
     private var header: some View {
         HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.tool_name)
-                    .font(.headline)
-                Text(item.agent_label)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            Text(item.tool_name)
+                .font(.footnote.weight(.semibold))
             Spacer()
             Text(relativeTime)
                 .font(.caption2)

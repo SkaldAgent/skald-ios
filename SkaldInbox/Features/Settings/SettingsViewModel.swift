@@ -9,6 +9,7 @@
 
 import CryptoKit
 import Foundation
+import os.log
 import SwiftUI
 import UIKit
 
@@ -24,6 +25,7 @@ final class SettingsViewModel: ObservableObject {
     @Published private(set) var isLoggingOut: Bool = false
 
     private weak var appState: AppState?
+    private let log = Logger(subsystem: "net.skaldagent.inbox", category: "Settings")
 
     func attach(appState: AppState) {
         self.appState = appState
@@ -84,7 +86,9 @@ final class SettingsViewModel: ObservableObject {
             try KeychainStore.shared.deleteAll()
         } catch {
             // Even if Keychain deletion fails, transition state — the user
-            // expects to be logged out.
+            // expects to be logged out.  Log it: a silent failure here used to
+            // leave the pairing on-device, so logout looked broken.
+            log.error("Keychain wipe on logout failed: \(String(describing: error), privacy: .public)")
         }
         appState?.didLogout()
     }

@@ -22,29 +22,20 @@ struct InboxView: View {
         ZStack(alignment: .top) {
             contentList
 
-            if vm.connectionState != .connected {
-                disconnectionBanner
-                    .transition(.move(edge: .top).combined(with: .opacity))
+            VStack(spacing: 0) {
+                if vm.isRefreshing {
+                    refreshBanner
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+                if vm.connectionState != .connected {
+                    disconnectionBanner
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
             }
+            .animation(.default, value: vm.isRefreshing)
+            .animation(.default, value: vm.connectionState)
         }
         .navigationTitle("Inbox")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    vm.connect()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .accessibilityLabel("Reconnect")
-            }
-            ToolbarItem(placement: .topBarLeading) {
-                if vm.connectionState == .connected {
-                    Button("Disconnect") {
-                        vm.disconnect()
-                    }
-                }
-            }
-        }
         .sheet(item: $pendingReject) { item in
             RejectReasonView(
                 item: item,
@@ -86,7 +77,13 @@ struct InboxView: View {
     @ViewBuilder
     private var contentList: some View {
         if vm.approvals.isEmpty && vm.clarifications.isEmpty {
-            emptyState
+            GeometryReader { proxy in
+                ScrollView {
+                    emptyState
+                        .frame(minHeight: proxy.size.height)
+                }
+                .refreshable { await vm.refresh() }
+            }
         } else {
             List {
                 if !vm.approvals.isEmpty {
@@ -101,8 +98,9 @@ struct InboxView: View {
                                     pendingReject = item
                                 }
                             )
-                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                            .listRowInsets(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8))
                             .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
                         }
                     }
                 }
@@ -112,41 +110,64 @@ struct InboxView: View {
                             ClarificationCard(item: item) { answer in
                                 Task { await vm.answer(item, answer: answer) }
                             }
-                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                            .listRowInsets(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8))
                             .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
                         }
                     }
                 }
             }
-            .listStyle(.insetGrouped)
+            .listStyle(.plain)
+            .refreshable { await vm.refresh() }
             .animation(.default, value: vm.approvals.count)
             .animation(.default, value: vm.clarifications.count)
         }
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Spacer()
-            Image(systemName: "tray")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-            Text("Nothing to do")
-                .font(.title3)
-                .foregroundStyle(.secondary)
-            Text("New requests from Skald will appear here.")
-                .font(.footnote)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-            Spacer()
+        ZStack {
+            Image("EmptyStateBackground")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .opacity(0.5)
+
+            VStack(spacing: 12) {
+                Spacer()
+                Text("Nothing to do")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                Text("New requests from Skald will appear here.")
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                Spacer()
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var refreshBanner: some View {
+        HStack {
+            ProgressView()
+                .controlSize(.small)
+                .tint(.white)
+            Text("Refreshing…")
+                .font(.footnote.weight(.medium))
+            Spacer()
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.blue.opacity(0.85))
     }
 
     private var disconnectionBanner: some View {
         HStack {
             ProgressView()
                 .controlSize(.small)
+                .tint(.white)
             Text("Disconnected — retrying…")
                 .font(.footnote.weight(.medium))
             Spacer()
@@ -154,7 +175,7 @@ struct InboxView: View {
         .foregroundStyle(.white)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Color.orange.opacity(0.9))
+        .background(Color("SkaldBackground").opacity(0.85))
     }
 }
 

@@ -16,11 +16,11 @@ struct ClarificationCard: View {
     @FocusState private var focused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             header
 
             Text(item.question)
-                .font(.body)
+                .font(.footnote)
                 .foregroundStyle(.primary)
 
             if let ctx = item.context, !ctx.isEmpty {
@@ -35,20 +35,20 @@ struct ClarificationCard: View {
             }
 
             if let suggestions = item.suggested_answers, !suggestions.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text("Quick replies")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    FlowLayout(spacing: 8) {
+                    FlowLayout(spacing: 6) {
                         ForEach(suggestions, id: \.self) { suggestion in
                             Button {
                                 onSend(suggestion)
                             } label: {
                                 Text(suggestion)
-                                    .font(.subheadline)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 7)
+                                    .font(.footnote)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
                                     .background(
                                         Capsule()
                                             .fill(Color(.systemGray5))
@@ -61,11 +61,12 @@ struct ClarificationCard: View {
                 }
             }
 
-            VStack(alignment: .trailing, spacing: 8) {
+            VStack(alignment: .trailing, spacing: 6) {
                 TextField("Write here…", text: $answer, axis: .vertical)
                     .lineLimit(2...6)
                     .focused($focused)
                     .textFieldStyle(.roundedBorder)
+                    .font(.footnote)
                     .submitLabel(.send)
                     .onSubmit { send() }
 
@@ -75,13 +76,14 @@ struct ClarificationCard: View {
                     Label("Send", systemImage: "paperplane.fill")
                 }
                 .buttonStyle(.borderedProminent)
+                .controlSize(.small)
                 .disabled(answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
-            .padding(.top, 4)
+            .padding(.top, 2)
         }
-        .padding(16)
+        .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 14)
+            RoundedRectangle(cornerRadius: 8)
                 .fill(Color(.secondarySystemGroupedBackground))
         )
     }
@@ -90,9 +92,9 @@ struct ClarificationCard: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
                 Label("Clarification", systemImage: "questionmark.bubble")
-                    .font(.headline)
+                    .font(.footnote.weight(.semibold))
                 Text(item.agent_label)
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
             }
             Spacer()

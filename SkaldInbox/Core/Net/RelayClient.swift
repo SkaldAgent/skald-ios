@@ -118,7 +118,12 @@ actor RelayClient {
 
     // MARK: - Internals
 
-    private var session: URLSession = .shared
+    /// The per-session `URLSession` we create in `runClientSession`.  `nil`
+    /// until we connect and again after `close()`.  We deliberately do NOT
+    /// default this to `URLSession.shared`: `close()` calls
+    /// `invalidateAndCancel()`, and invalidating the process-wide shared
+    /// session would break all other networking.
+    private var session: URLSession?
     private var task: URLSessionWebSocketTask?
     private var receiveTask: Task<Void, Never>?
     private var keepaliveTask: Task<Void, Never>?
@@ -174,7 +179,18 @@ actor RelayClient {
         // Create a fresh session and task.
         let config = URLSessionConfiguration.default
         config.waitsForConnectivity = true
-        config.timeoutIntervalForRequest = .infinity
+        // Bound the per-read wait so a half-open socket (relay accepted the
+        // connection but stopped responding) surfaces as a `receive()` error
+        // and lets the session loop reconnect — instead of hanging forever and
+        // pinning the URLSession (+ its pending task) in memory.  Our 25s
+        // keepalive ping (startKeepalive) keeps socket activity well inside
+        // this window, so a *healthy* idle stream is never dropped.  The
+        // initial handshake is bounded too: no `challenge` within 60s → fail.
+        config.timeoutIntervalForRequest = 60
+        // Keep the *resource* timeout infinite: this is a long-lived streaming
+        // WS and a finite value would tear down a perfectly healthy connection
+        // once it elapsed.  We instead close the connection explicitly when the
+        // app backgrounds (MainTabView's scenePhase handler).
         config.timeoutIntervalForResource = .infinity
         let session = URLSession(configuration: config)
         self.session = session
@@ -190,6 +206,12 @@ actor RelayClient {
             receiveTask?.cancel()
             receiveTask = nil
             self.task = nil
+            // Invalidate the session we just created — without this, a failed
+            // (or cancelled) handshake leaks the URLSession and its pending
+            // connection task.  This path runs on every reconnect attempt that
+            // can't complete auth, so the leak compounds over time.
+            session.invalidateAndCancel()
+            self.session = nil
             throw error
         }
 
@@ -575,7 +597,8 @@ actor RelayClient {
         receiveTask = nil
         task?.cancel(with: .normalClosure, reason: nil)
         task = nil
-        session.invalidateAndCancel()
+        session?.invalidateAndCancel()
+        session = nil
     }
 
     // MARK: - Frame I/O helpers
