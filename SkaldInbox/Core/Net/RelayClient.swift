@@ -109,11 +109,6 @@ actor RelayClient {
     let pairingTokenHex: String?
     let clientEd25519Pub: String   // hex (raw 32B)
     let clientX25519Pub: String   // hex (raw 32B)
-    /// The agent's ed25519 public key (hex).  Used as the `peer` field
-    /// (the `to` address) in E2E `Message` envelopes
-    /// (relay-protocol.md v2 §3.2).  Required for the `sendE2E` path;
-    /// ignored otherwise.
-    let agentEd25519Pub: String?
     let deviceToken: String?
 
     // MARK: - Internals
@@ -138,7 +133,6 @@ actor RelayClient {
          pairingTokenHex: String? = nil,
          clientEd25519Pub: String,
          clientX25519Pub: String,
-         agentEd25519Pub: String? = nil,
          deviceToken: String? = nil)
     {
         // Force `/v1/ws` on the URL path and strip any query string (the
@@ -157,7 +151,6 @@ actor RelayClient {
         self.pairingTokenHex = pairingTokenHex
         self.clientEd25519Pub = clientEd25519Pub
         self.clientX25519Pub = clientX25519Pub
-        self.agentEd25519Pub = agentEd25519Pub
         self.deviceToken = deviceToken
     }
 
@@ -337,53 +330,35 @@ actor RelayClient {
 
     // MARK: - Send
 
-    /// Encrypt `plaintext` with the given `CryptoEngine`, build a V2
+    /// Wrap an **already-sealed** payload in a V2
     /// `Message{ciphertext, nonce, peer, live}` envelope
-    /// (relay-protocol.md v2 §3.2), wrap it in a `RelayFrame`, and send
-    /// it as a binary WebSocket frame.
+    /// (relay-protocol.md v2 §3.2), then send it as a binary WebSocket frame.
     ///
-    /// The send counter is atomically incremented in the Keychain BEFORE
-    /// the message leaves the wire (crypto.md §6.1: persist before send).
-    /// On any subsequent send failure the counter has still been bumped —
-    /// that is intentional (anti-replay), and the receiver will simply skip
-    /// a counter slot (recoverable because the next snapshot re-syncs
-    /// state).
+    /// This is pure transport: the AEAD seal and the anti-replay send-counter
+    /// bump live in `SkaldSession` (crypto.md §6.1).  Keeping `RelayClient`
+    /// crypto-agnostic is what lets the same transport carry any feature's
+    /// payloads over one connection.
     ///
-    /// - Parameter live: when `true`, the message is routed on the
-    ///   route-or-fail live channel (relay-protocol.md v2 §3).  If the
-    ///   destination peer is offline, the relay responds with
-    ///   `PeerOffline` and does NOT queue or push.  Set `live = true` for
-    ///   pull-of-current-state traffic (e.g. `inbox_request`); leave
-    ///   `false` for event-driven notifications that must reach an
-    ///   offline client (store-and-forward + push).  Defaults to `false`.
-    func sendE2E(plaintext: Data,
-                 cryptoEngine: CryptoEngine,
-                 live: Bool = false) async throws {
-        // Atomically claim the next counter value.
-        let nextCounter = try KeychainStore.shared.incrementCounter(
-            for: KeychainStore.Key.sendCounter
-        )
-        let (nonce, sealed) = try cryptoEngine.seal(
-            plaintext: plaintext,
-            direction: CryptoConstants.nonceDirClientToAgent,
-            counterSource: { nextCounter }
-        )
-
-        // The recipient's ed25519 pub (the `peer` / `to` field per
-        // relay-protocol.md v2 §3.2).  The app-side caller
-        // (PairingViewModel) has access to `agent_ed25519_pub` from the
-        // QR and stores it in the Keychain; we pass it through the
-        // `RelayClient` config.
-        guard let agentEdHex = agentEd25519Pub else {
-            throw SkaldError.relayError("agent_ed25519_pub not configured")
-        }
-        let peer = try Hex.decode(agentEdHex)
+    /// - Parameters:
+    ///   - ciphertext: the sealed blob (`ct ‖ tag`, no nonce).
+    ///   - nonce: the 12-byte AEAD nonce (DIR ‖ counter).
+    ///   - peer: the recipient's raw 32B Ed25519 public key (the `to` field).
+    ///   - live: when `true`, the message is routed on the route-or-fail live
+    ///     channel (relay-protocol.md v2 §3).  If the destination peer is
+    ///     offline, the relay responds with `PeerOffline` and does NOT queue
+    ///     or push.  Set `live = true` for pull-of-current-state traffic
+    ///     (e.g. `inbox_request`); leave `false` for event-driven
+    ///     notifications that must reach an offline client
+    ///     (store-and-forward + push).
+    func sendEnvelope(ciphertext: Data,
+                      nonce: Data,
+                      peer: Data,
+                      live: Bool) async throws {
         guard peer.count == 32 else {
-            throw SkaldError.relayError("agent_ed25519_pub must be 32B (got \(peer.count))")
+            throw SkaldError.relayError("peer must be 32B (got \(peer.count))")
         }
-
         var msg = Skald_Relay_V2_Message()
-        msg.ciphertext = sealed
+        msg.ciphertext = ciphertext
         msg.nonce = nonce
         msg.peer = peer
         msg.live = live

@@ -80,6 +80,10 @@ final class AppState: ObservableObject {
     /// `.awaitingAuth` can show the PairingView with the right metadata.
     private(set) var lastPairingQR: PairingQRData?
 
+    /// The single, app-wide E2E client.  Owns the one long-lived relay
+    /// connection; every feature view-model subscribes to it.
+    let session: SkaldSession
+
     // MARK: - Init
 
     init() {
@@ -97,6 +101,12 @@ final class AppState: ObservableObject {
         // Restore the last-known APNs token so the first relay connect after a
         // cold launch sends it immediately, instead of an empty placeholder.
         self.deviceTokenHex = (try? KeychainStore.shared.getString(for: KeychainStore.Key.deviceToken)) ?? nil
+
+        let session = SkaldSession()
+        self.session = session
+        // When the APNs token arrives/rotates after we're already connected,
+        // force a fresh session so the relay re-learns the token.
+        self.onDeviceTokenChanged = { Task { await session.reconnect() } }
     }
 
     // MARK: - Phase transitions (called by the feature view-models)

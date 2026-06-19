@@ -173,95 +173,25 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 
     // MARK: - One-shot approval send
 
-    /// Open a short `.client` WS, send an `approval_response { approved }`,
-    /// and close.  Runs in a detached Task so the system notification handler
-    /// can return immediately.
+    /// Open a short `.client` WS, send an `approval_response { approved }`, and
+    /// close.  Runs in a detached Task so the system notification handler can
+    /// return immediately.  `SkaldSession.sendOneShot` handles the transient
+    /// connect/encrypt/send/close and gives up silently if we're not paired.
     private func sendOneShotApproval(requestId: String) async {
         guard !requestId.isEmpty else { return }
-
-        // Read everything we need from Keychain.  If we don't have what we
-        // need we just give up silently — the user can still approve from
-        // the inbox.
-        let agentEdDataOpt = try? KeychainStore.shared.getData(for: KeychainStore.Key.agentEd25519Pub)
-        let relayUrlStringOpt = try? KeychainStore.shared.getString(for: KeychainStore.Key.relayUrl)
-
-        guard let myEd = appState?.myEd25519PubHex,
-              let myX  = appState?.myX25519PubHex,
-              let nsHex = appState?.namespaceIdHex,
-              let agentEdHex = agentEdDataOpt.flatMap({ $0 }),
-              !agentEdHex.isEmpty,
-              let relayUrlString = relayUrlStringOpt.flatMap({ $0 }),
-              !relayUrlString.isEmpty,
-              let relayURL = URL(string: relayUrlString)
-        else { return }
-
-        let client = RelayClient(
-            relayURL: relayURL,
-            role: .client,
-            namespaceIdHex: nsHex,
-            pairingTokenHex: nil,
-            clientEd25519Pub: myEd,
-            clientX25519Pub: myX,
-            agentEd25519Pub: Hex.encode(agentEdHex),
-            deviceToken: appState?.deviceTokenHex
+        let payload = ApprovalResponse(
+            v: 1,
+            kind: "approval_response",
+            id: UUID().uuidString.lowercased(),
+            ts: Int64(Date().timeIntervalSince1970 * 1000),
+            request_id: requestId,
+            decision: "approved",
+            reason: nil
         )
-
         do {
-            try await client.runClientSession { c in
-                // Build the engine.
-                let engine = try Self.makeEngine()
-
-                // Build the approval_response payload.
-                let payload = ApprovalResponse(
-                    v: 1,
-                    kind: "approval_response",
-                    id: UUID().uuidString.lowercased(),
-                    ts: Int64(Date().timeIntervalSince1970 * 1000),
-                    request_id: requestId,
-                    decision: "approved",
-                    reason: nil
-                )
-                let data = try JSONEncoder().encode(payload)
-                try await c.sendE2E(plaintext: data, cryptoEngine: engine)
-            }
+            try await SkaldSession.sendOneShot(payload)
         } catch {
             NSLog("Skald: one-shot APPROVE failed: \(error.localizedDescription)")
         }
-    }
-
-    /// Reconstruct a `CryptoEngine` from Keychain — same logic as
-    /// `InboxViewModel.makeEngine()`.  Duplicated here to avoid a circular
-    /// dependency between AppDelegate and InboxViewModel.
-    private static func makeEngine() throws -> CryptoEngine {
-        let seed = try KeyManager.shared.loadOrCreateSeed()
-        let kp = try KeyManager.shared.deriveKeys(seed: seed)
-
-        // getData throws on Keychain failure, returns nil on missing entry.
-        // We turn both into an `invalidPayload` error here — we just need
-        // any SkaldError to propagate to the caller.
-        func require(_ account: String) throws -> Data {
-            do {
-                guard let d = try KeychainStore.shared.getData(for: account), d.count == 32 else {
-                    throw SkaldError.invalidPayload
-                }
-                return d
-            } catch let e as SkaldError {
-                throw e
-            } catch {
-                throw SkaldError.invalidPayload
-            }
-        }
-
-        let agentEd = try require(KeychainStore.Key.agentEd25519Pub)
-        let agentX  = try require(KeychainStore.Key.agentX25519Pub)
-        let ns      = try require(KeychainStore.Key.namespaceId)
-
-        return CryptoEngine(
-            agentX25519Pub:  agentX,
-            agentEd25519Pub: agentEd,
-            myX25519Priv:    kp.agreement,
-            myEd25519Pub:    kp.signing.publicKey.rawRepresentation,
-            namespaceIdRaw:  ns
-        )
     }
 }

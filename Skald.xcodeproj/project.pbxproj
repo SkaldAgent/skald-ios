@@ -11,6 +11,7 @@
 		19BA81B163E3FFBC2BC48814 /* SkaldApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9577A8CAFA15848D33DBB82 /* SkaldApp.swift */; };
 		1A38F7810B8C1FA8A89B640B /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED854AE8ABAA88A69C4AB7CF /* KeychainStore.swift */; };
 		1A8F9B10688710468047791D /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC30548CFFE5AA70FB06D295 /* NotificationService.swift */; };
+		22C60DCCEE9DF278173C2DB9 /* SkaldSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A884681A0E3B3AAB3BB75B16 /* SkaldSession.swift */; };
 		2509367AC1C4E0CE61C2CA53 /* InboxViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2361CDC3F35D31BC424F1B /* InboxViewModel.swift */; };
 		26ECB2A1F1BDC464D2637404 /* PairingQR.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24B5AEB8809B0C91EDAD2EA2 /* PairingQR.swift */; };
 		2D0B6939F7B882442B6A5DB7 /* RejectReasonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB264D700B7F053965417E2 /* RejectReasonView.swift */; };
@@ -24,6 +25,7 @@
 		5AE49CC2A5413B90CF10E0BE /* RelayClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78CEC552540FA09B7DC38A85 /* RelayClient.swift */; };
 		687A5AF7A9A62E088ACAB895 /* SkaldInboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD4A930D7D6728BC1F63B5B2 /* SkaldInboxTests.swift */; };
 		68C4B71FF4435CB6F41B3083 /* Payloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDC8B8A139059FB192B687AA /* Payloads.swift */; };
+		75E9B0EDF4B74AEB6494A2DC /* PairedIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BAD9ACC7897BAAB242ABE20 /* PairedIdentity.swift */; };
 		86AD222B41D7AB3CD9A9E52F /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3AD21ADB0046A172A95C84 /* ScanView.swift */; };
 		9A67123FA54A088B1EBF5BB4 /* InboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D98F2CE5662171EA3FF9376 /* InboxView.swift */; };
 		9B0ABA47B9C97C15F7E8F0E6 /* CryptoEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3109A3BEC5D546E2268DD7F /* CryptoEngine.swift */; };
@@ -92,6 +94,8 @@
 		744A908DDB0606A6430C4AAB /* ScanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanViewModel.swift; sourceTree = "<group>"; };
 		78CEC552540FA09B7DC38A85 /* RelayClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayClient.swift; sourceTree = "<group>"; };
 		7D98F2CE5662171EA3FF9376 /* InboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxView.swift; sourceTree = "<group>"; };
+		9BAD9ACC7897BAAB242ABE20 /* PairedIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairedIdentity.swift; sourceTree = "<group>"; };
+		A884681A0E3B3AAB3BB75B16 /* SkaldSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkaldSession.swift; sourceTree = "<group>"; };
 		AC2361CDC3F35D31BC424F1B /* InboxViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxViewModel.swift; sourceTree = "<group>"; };
 		AD4A930D7D6728BC1F63B5B2 /* SkaldInboxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkaldInboxTests.swift; sourceTree = "<group>"; };
 		B287B660B5B92BD92A9C0439 /* SkaldTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SkaldTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -144,6 +148,7 @@
 				99FAD042E828E936A47B6EA9 /* Crypto */,
 				3EEC59A57E7407E94C993EC4 /* Model */,
 				96CA55587E7F1E6614470231 /* Net */,
+				979CAD2209D7680449B7931B /* Session */,
 				B14AA7D12E75CB53ACD2D6CA /* Store */,
 			);
 			path = Core;
@@ -229,6 +234,15 @@
 				78CEC552540FA09B7DC38A85 /* RelayClient.swift */,
 			);
 			path = Net;
+			sourceTree = "<group>";
+		};
+		979CAD2209D7680449B7931B /* Session */ = {
+			isa = PBXGroup;
+			children = (
+				9BAD9ACC7897BAAB242ABE20 /* PairedIdentity.swift */,
+				A884681A0E3B3AAB3BB75B16 /* SkaldSession.swift */,
+			);
+			path = Session;
 			sourceTree = "<group>";
 		};
 		99FAD042E828E936A47B6EA9 /* Crypto */ = {
@@ -491,6 +505,7 @@
 				2509367AC1C4E0CE61C2CA53 /* InboxViewModel.swift in Sources */,
 				D11014672DB63C787012E2F8 /* KeyManager.swift in Sources */,
 				1A38F7810B8C1FA8A89B640B /* KeychainStore.swift in Sources */,
+				75E9B0EDF4B74AEB6494A2DC /* PairedIdentity.swift in Sources */,
 				A34ED79076376DFF65A7953F /* PairingQR.swift in Sources */,
 				A0EF140D74CF43AB60596AD1 /* PairingView.swift in Sources */,
 				3861918F9502A93836966F6F /* PairingViewModel.swift in Sources */,
@@ -502,6 +517,7 @@
 				D74D4D1D2EADECB5ED675E5D /* SettingsView.swift in Sources */,
 				AF39AA4F7B70CDB45A228E39 /* SettingsViewModel.swift in Sources */,
 				19BA81B163E3FFBC2BC48814 /* SkaldApp.swift in Sources */,
+				22C60DCCEE9DF278173C2DB9 /* SkaldSession.swift in Sources */,
 				B03280A0B68CE0EB44D6F5D3 /* relay_frame.pb.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -224,7 +224,7 @@ struct LogoutPayload: Codable, Equatable {
 /// switches on `kind` to decode the rest.  Unknown `kind` throws
 /// `SkaldError.invalidPayload`.  This pattern lets the rest of the app use
 /// one switch to dispatch a payload to the right ViewModel.
-enum Payload: Equatable {
+enum Payload: Equatable, Sendable {
 
     case inboxUpdate(InboxUpdate)
     case notification(Notification)
