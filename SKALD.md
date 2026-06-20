@@ -15,6 +15,7 @@ Skald (home)  ←WSS→  Relay (cloud)  ←WSS→  iPhone
 - **End-to-end encryption**: X25519 + Ed25519 + HKDF-SHA256 + AES-256-GCM (CryptoKit).
 - **Relay** is zero-trust: it routes opaque encrypted blobs and bridges APNs push — it never sees contents.
 - **Pairing** via QR code (contains relay URL, public keys, pairing token).
+- **Pipe (relay proxy)**: TURN-style relayed byte-stream on `/v1/pipe`. Control plane uses framing version `0x02` over the existing E2E channel (MsgPack `PipeSignal`). Data plane is a separate WebSocket with MsgPack auth handshake and per-frame AES-256-GCM using an ephemeral per-pipe key (X25519 ECDH + HKDF, forward secrecy per connection).
 
 ## Targets
 
@@ -51,8 +52,9 @@ Skald (home)  ←WSS→  Relay (cloud)  ←WSS→  iPhone
 Skald/
 ├── App/                        # SwiftUI App + AppDelegate
 ├── Core/
-│   ├── Crypto/                 # CryptoConstants, KeyManager, CryptoEngine
-│   ├── Net/                    # RelayClient (WebSocket), Proto/ (generated protobuf)
+│   ├── Crypto/                 # CryptoConstants, KeyManager, CryptoEngine, PipeCrypto
+│   ├── Net/                    # RelayClient, PipeTypes, PipeMsgPack, PipeConnection, Proto/
+│   ├── Session/                # SkaldSession (actor), SkaldSession+Pipe
 │   ├── Store/                  # KeychainStore (App Group)
 │   └── Model/                  # Payloads, PairingQR (Codable)
 ├── Features/

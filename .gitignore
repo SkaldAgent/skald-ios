@@ -144,3 +144,4 @@ fastlane/screenshots/**/*.jpg
 !fastlane/screenshots/**/README.txt
 .metadata/
 .screenshots/
+/data/

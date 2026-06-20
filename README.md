@@ -37,6 +37,7 @@
 - **📡 Works behind NAT** — WebSocket relay bridges your agent at home to your phone. No port forwarding.
 - **🟢 Agent presence** — Know when your agent is online. Presence detection via V2 WebSocket protocol.
 - **📨 Live channel** — Inbox requests routed directly over the live WebSocket connection — no polling.
+- **🔗 Pipe (relay proxy)** — TURN-style relayed byte-stream between client and agent: ephemeral X25519 ECDH for per-pipe PFS key, AES-256-GCM per-frame encryption over a dedicated `/v1/pipe` WebSocket.
 
 <br>
 
@@ -125,13 +126,20 @@ Skald/
 ├── Core/
 │   ├── Crypto/
 │   │   ├── KeyManager.swift    # Seed generation, key derivation (Ed25519 + X25519)
-│   │   ├── CryptoEngine.swift  # ECDH → HKDF → AES-256-GCM encrypt/decrypt
-│   │   └── CryptoConstants.swift  # Domain constants, nonce direction, error types
+│   │   ├── CryptoEngine.swift  # ECDH → HKDF → AES-256-GCM seal/open (multi-version framing)
+│   │   ├── CryptoConstants.swift  # Domain constants, nonce direction, error types
+│   │   └── PipeCrypto.swift    # Per-pipe HKDF key derivation, pipe-auth signing, signal framing
 │   ├── Net/
 │   │   ├── RelayClient.swift   # WebSocket client (binary WS + protobuf RelayFrame)
+│   │   ├── PipeTypes.swift     # PipeSignal, PipeInvite/Accept/Reject, PipeChallenge/Auth
+│   │   ├── PipeMsgPack.swift   # Minimal MsgPack encoder/decoder (named-map, rmp-serde compat)
+│   │   ├── PipeConnection.swift  # /v1/pipe data plane: auth handshake + AES-256-GCM frames
 │   │   └── Proto/              # Generated protobuf Swift types
 │   │       └── skald/relay/v2/
 │   │           └── relay_frame.pb.swift
+│   ├── Session/
+│   │   ├── SkaldSession.swift  # App-wide E2E client actor (reconnect loop, multicast streams)
+│   │   └── SkaldSession+Pipe.swift  # Pipe control plane: openPipe, acceptPipe, signal routing
 │   ├── Store/
 │   │   └── KeychainStore.swift # App Group keychain via Security.framework
 │   └── Model/
@@ -160,7 +168,11 @@ Skald/
 | Encryption | AES-256-GCM |
 | Nonce | Monotonic counter per direction (prevents replay) |
 | AAD | Binds `from_pubkey` + `to_pubkey` + `namespace_id` |
-| Plaintext framing (V2) | `0x01` ‖ `comp(1B)` ‖ `payload(JSON)` — version + compression header prepended before encryption |
+| Plaintext framing V2 (messages) | `0x01` ‖ `comp(1B)` ‖ `payload(JSON)` |
+| Plaintext framing V2 (pipe signals) | `0x02` ‖ `0x00` ‖ `MsgPack(PipeSignal)` — routed before decompression |
+| Pipe key (per-pipe PFS) | Ephemeral X25519 ECDH → HKDF-SHA256(`salt="skald-pipe-v1"`, `info="pipe-aes-256-gcm"`) |
+| Pipe nonce | `DIR(4B)` ‖ `counter(8B BE)`, counters start at 1, initiator/responder directions separate |
+| Pipe AAD | `connection_id` (32 B) |
 
 Full specs: [`data/ios-app/`](https://github.com/xavix-yo/skald/tree/main/data/ios-app) in the Skald Agent repo.
 

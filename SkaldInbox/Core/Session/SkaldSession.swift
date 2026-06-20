@@ -52,15 +52,23 @@ actor SkaldSession {
         case offline
     }
 
+    // MARK: - Pipe waiter
+
+    /// Bookkeeping for a pending `openPipe` call.
+    struct PipeWaiterEntry {
+        let continuation: CheckedContinuation<PipeAccept, any Error>
+        let timeoutTask: Task<Void, Never>
+    }
+
     // MARK: - Connection state
 
     private(set) var connectionState: ConnectionState = .disconnected
 
     // MARK: - Live-session internals
 
-    private var transport: RelayClient?
-    private var engine: CryptoEngine?
-    private var identity: PairedIdentity?
+    private(set) var transport: RelayClient?
+    private(set) var engine: CryptoEngine?
+    private(set) var identity: PairedIdentity?
     /// Last-seen receive counter, mirrored to the Keychain after every open.
     private var recvCounter: UInt64 = 0
     private var loopTask: Task<Void, Never>?
@@ -78,7 +86,18 @@ actor SkaldSession {
     private var stateConsumers: [UUID: AsyncStream<ConnectionState>.Continuation] = [:]
     private var errorConsumers: [UUID: AsyncStream<String>.Continuation] = [:]
 
-    private let log = Logger(subsystem: "net.skaldagent.inbox", category: "SkaldSession")
+    // MARK: - Pipe layer state
+
+    /// Pending `openPipe` waiters: connectionId → entry (continuation + timeout task).
+    var pipeWaiters: [Data: PipeWaiterEntry] = [:]
+
+    /// Multicast for inbound pipe invites (responder side).
+    var incomingPipeConsumers: [UUID: AsyncStream<IncomingPipe>.Continuation] = [:]
+
+    /// Pipe accept timeout (pipe.md).
+    static let pipeAcceptTimeout: UInt64 = 30_000_000_000  // 30s in ns
+
+    let log = Logger(subsystem: "net.skaldagent.inbox", category: "SkaldSession")
 
     /// Keychain flag: have we sent the one-time `hello` for this pairing?
     private static let helloSentKey = "skald.hello_sent"
@@ -130,6 +149,7 @@ actor SkaldSession {
         let t = transport
         transport = nil
         await t?.close()
+        cancelAllPipeWaiters()
     }
 
     // MARK: - Session loop (was InboxViewModel.runSessionLoop)
@@ -184,6 +204,7 @@ actor SkaldSession {
     /// One WS session: load identity, build transport + engine, connect, then
     /// drive the receive loop until it ends.
     private func runOneSession() async throws {
+        defer { cancelAllPipeWaiters() }
         let identity = try PairedIdentity.load()
         self.identity = identity
         let transport = identity.makeClientTransport()
@@ -229,10 +250,9 @@ actor SkaldSession {
     private func handleIncoming(_ msg: IncomingMessage) async {
         guard let engine = engine, let identity = identity else { return }
         do {
-            // `engine.open` is synchronous; its `lastSeenCounter` /
-            // `updateLastSeen` closures run on this actor's executor, so the
-            // `recvCounter` reads/writes are safe without extra locking.
-            let plaintext = try engine.open(
+            // Decrypt to raw framed bytes (version ‖ comp ‖ body) so we can
+            // dispatch on the version byte before stripping the header.
+            let framed = try engine.openFramed(
                 nonce: msg.nonce,
                 sealed: msg.ciphertext,
                 direction: CryptoConstants.nonceDirAgentToClient,
@@ -248,8 +268,34 @@ actor SkaldSession {
                 fromEd25519Pub: msg.from,
                 toEd25519Pub: identity.myEd25519Pub
             )
-            let payload = try JSONDecoder().decode(Payload.self, from: plaintext)
-            broadcast(payload)
+
+            switch framed[0] {
+            case CryptoConstants.framingVersionPipe:
+                guard let body = PipeCrypto.unframePipeSignal(framed) else {
+                    log.warning("malformed pipe signal framing dropped")
+                    return
+                }
+                await handlePipeSignal(from: msg.from, body: body)
+
+            case CryptoConstants.framingVersion:
+                let comp = framed[1]
+                let bodyData = framed.subdata(in: 2..<framed.count)
+                let plaintext: Data
+                switch comp {
+                case CryptoConstants.compNone:
+                    plaintext = bodyData
+                case CryptoConstants.compZlib:
+                    plaintext = try CryptoEngine.zlibDecompress(bodyData)
+                default:
+                    log.warning("unknown comp byte \(comp) — dropping")
+                    return
+                }
+                let payload = try JSONDecoder().decode(Payload.self, from: plaintext)
+                broadcast(payload)
+
+            default:
+                log.warning("unknown framing version \(framed[0]) — dropping")
+            }
         } catch let err as SkaldError {
             emitError(String(localized: "Decryption: ") + (err.errorDescription ?? String(localized: "unknown error")))
         } catch {

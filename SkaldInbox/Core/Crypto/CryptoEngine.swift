@@ -175,26 +175,125 @@ final class CryptoEngine {
         return (nonce, sealed)
     }
 
+    // MARK: - Seal (already-framed plaintext, for pipe signaling)
+
+    /// Seal plaintext that is ALREADY framed (caller pre-appended version+comp).
+    /// Used by the pipe signaling layer which uses its own framing (version=0x02).
+    ///
+    /// Identical to `seal` but skips the V2 framing prepend.  All other
+    /// behaviour (nonce construction, AAD binding, AES-256-GCM) is unchanged.
+    func sealFramed(
+        plaintext: Data,
+        direction: [UInt8],
+        counterSource: () -> UInt64
+    ) throws -> (nonce: Data, sealed: Data) {
+        precondition(direction.count == 4, "direction must be 4B")
+
+        let counter = counterSource()
+        let nonce = CryptoEngine.makeNonce(direction: direction, counter: counter)
+
+        let aad = CryptoEngine.makeAad(
+            namespaceIdRaw: namespaceIdRaw,
+            fromEd25519Pub: myEd25519Pub,
+            toEd25519Pub: agentEd25519Pub
+        )
+
+        let aesKey = try deriveAesKey()
+        let gcmNonce: AES.GCM.Nonce
+        do {
+            gcmNonce = try AES.GCM.Nonce(data: nonce)
+        } catch {
+            throw SkaldError.invalidNonce
+        }
+
+        let box: AES.GCM.SealedBox
+        do {
+            box = try AES.GCM.seal(plaintext, using: aesKey,
+                                   nonce: gcmNonce, authenticating: aad)
+        } catch {
+            throw SkaldError.decryptionFailed
+        }
+        let sealed = box.ciphertext + box.tag
+        return (nonce, sealed)
+    }
+
     // MARK: - Open (crypto.md §6)
 
-    /// Decrypt and authenticate an incoming sealed blob.
+    /// Decrypt and authenticate an incoming sealed blob, returning the raw
+    /// framed plaintext `version(1) ‖ comp(1) ‖ body` without interpreting
+    /// the framing version.
     ///
-    /// - Parameter nonce: 12-byte nonce from the envelope (DIR‖counter).
-    /// - Parameter sealed: `ct ‖ tag` blob (base64-decoded by the caller).
-    /// - Parameter direction: 4-byte direction prefix we expect.  Used only
-    ///   for sanity checking against the first 4 bytes of `nonce`.
-    /// - Parameter lastSeenCounter: closure returning the highest counter
-    ///   we've accepted so far.  Replay protection rejects anything `<=`.
-    /// - Parameter updateLastSeen: closure called with the new counter on
-    ///   success, so the caller can persist it (e.g. via
-    ///   `KeychainStore.compareAndAdvanceCounter`).
-    /// - Parameter fromEd25519Pub: ed25519 public key of the sender (i.e.
-    ///   the agent's ed25519 pubkey).  Must match `agentX25519Pub`'s
-    ///   Ed25519 counterpart — we don't enforce equality of the two curves
-    ///   (they are independent keypairs in our model), but we DO require
-    ///   this to be the same identity we're paired with.
-    /// - Parameter toEd25519Pub: ed25519 public key of the recipient —
-    ///   must equal `myEd25519Pub`.
+    /// Used by `SkaldSession.handleIncoming` so it can dispatch on the version
+    /// byte before stripping the header (v0x01 → JSON, v0x02 → pipe signal).
+    /// The NSE and other callers that only handle v0x01 should call `open()`
+    /// instead, which validates the version and decompresses for you.
+    func openFramed(nonce: Data,
+                    sealed: Data,
+                    direction: [UInt8],
+                    lastSeenCounter: () -> UInt64,
+                    updateLastSeen: (UInt64) -> Void,
+                    fromEd25519Pub: Data,
+                    toEd25519Pub: Data) throws -> Data
+    {
+        precondition(direction.count == 4, "direction must be 4B")
+        guard nonce.count == 12 else {
+            throw SkaldError.invalidNonce
+        }
+        let dirBytes = Array(nonce.prefix(4))
+        if dirBytes != direction {
+            throw SkaldError.invalidNonce
+        }
+        guard toEd25519Pub == myEd25519Pub else {
+            throw SkaldError.decryptionFailed
+        }
+        guard fromEd25519Pub.count == 32 else {
+            throw SkaldError.decryptionFailed
+        }
+
+        let counterBytes = nonce.subdata(in: 4..<12)
+        let counter = counterBytes.withUnsafeBytes { ptr -> UInt64 in
+            var be: UInt64 = 0
+            _ = withUnsafeMutableBytes(of: &be) { dst in ptr.copyBytes(to: dst) }
+            return UInt64(bigEndian: be)
+        }
+        let last = lastSeenCounter()
+        if counter <= last {
+            throw SkaldError.counterRegression
+        }
+
+        let aad = CryptoEngine.makeAad(
+            namespaceIdRaw: namespaceIdRaw,
+            fromEd25519Pub: fromEd25519Pub,
+            toEd25519Pub: toEd25519Pub
+        )
+        let aesKey = try deriveAesKey()
+        let gcmNonce = try AES.GCM.Nonce(data: nonce)
+        let ct = sealed.prefix(sealed.count - 16)
+        let tag = sealed.suffix(16)
+        let box: AES.GCM.SealedBox
+        do {
+            box = try AES.GCM.SealedBox(nonce: gcmNonce, ciphertext: ct, tag: tag)
+        } catch {
+            throw SkaldError.invalidNonce
+        }
+        let framed: Data
+        do {
+            framed = try AES.GCM.open(box, using: aesKey, authenticating: aad)
+        } catch {
+            throw SkaldError.decryptionFailed
+        }
+        guard framed.count >= 2 else {
+            throw SkaldError.decryptionFailed
+        }
+
+        updateLastSeen(counter)
+        return framed
+    }
+
+    /// Decrypt, authenticate, and strip the V2 framing for a v0x01 JSON payload.
+    /// Validates that the framing version is exactly `0x01` and decompresses
+    /// the body if needed.  Callers that need to handle multiple framing
+    /// versions (pipe signals) should use `openFramed` instead.
     func open(nonce: Data,
               sealed: Data,
               direction: [UInt8],
@@ -203,99 +302,29 @@ final class CryptoEngine {
               fromEd25519Pub: Data,
               toEd25519Pub: Data) throws -> Data
     {
-        precondition(direction.count == 4, "direction must be 4B")
-        guard nonce.count == 12 else {
-            throw SkaldError.invalidNonce
-        }
-        // Sanity: first 4 bytes of nonce must match the expected DIR.
-        let dirBytes = Array(nonce.prefix(4))
-        if dirBytes != direction {
-            throw SkaldError.invalidNonce
-        }
-        guard toEd25519Pub == myEd25519Pub else {
-            // The packet claims a different recipient.  Reject without
-            // attempting decryption (AAD would fail anyway, but fail fast
-            // is nicer for debugging).
-            throw SkaldError.decryptionFailed
-        }
-        guard fromEd25519Pub.count == 32 else {
-            throw SkaldError.decryptionFailed
-        }
-
-        // Extract counter (bytes 4..12, big-endian).
-        let counterBytes = nonce.subdata(in: 4..<12)
-        let counter = counterBytes.withUnsafeBytes { ptr -> UInt64 in
-            var be: UInt64 = 0
-            _ = withUnsafeMutableBytes(of: &be) { dst in
-                ptr.copyBytes(to: dst)
-            }
-            return UInt64(bigEndian: be)
-        }
-
-        let last = lastSeenCounter()
-        if counter <= last {
-            throw SkaldError.counterRegression
-        }
-
-        // The AAD is `ns_raw ‖ from ‖ to` — from = sender (agent), to = us.
-        let aad = CryptoEngine.makeAad(
-            namespaceIdRaw: namespaceIdRaw,
-            fromEd25519Pub: fromEd25519Pub,
-            toEd25519Pub: toEd25519Pub
+        let framed = try openFramed(
+            nonce: nonce, sealed: sealed, direction: direction,
+            lastSeenCounter: lastSeenCounter, updateLastSeen: updateLastSeen,
+            fromEd25519Pub: fromEd25519Pub, toEd25519Pub: toEd25519Pub
         )
 
-        let aesKey = try deriveAesKey()
-        let gcmNonce = try AES.GCM.Nonce(data: nonce)
-        // `sealed` is ciphertext‖tag (no nonce).  Split for AES.GCM.SealedBox.
-        let ct = sealed.prefix(sealed.count - 16)
-        let tag = sealed.suffix(16)
-        let box: AES.GCM.SealedBox
-        do {
-            box = try AES.GCM.SealedBox(
-                nonce: gcmNonce,
-                ciphertext: ct,
-                tag: tag
-            )
-        } catch {
-            throw SkaldError.invalidNonce
-        }
-        let framed: Data
-        do {
-            framed = try AES.GCM.open(box, using: aesKey, authenticating: aad)
-        } catch {
-            // Per crypto.md §12: do NOT distinguish the cause in the error.
-            throw SkaldError.decryptionFailed
-        }
-
-        // V2 framing strip (v2/framing.md §3).  After AES-GCM we have
-        // `framed = version(1) ‖ comp(1) ‖ body`.  Reject anything malformed
-        // with the same generic `.decryptionFailed` so the caller (and the
-        // user-visible message) cannot distinguish a framing error from an
-        // AEAD failure (crypto.md §12).
-        guard framed.count >= 2 else {
-            throw SkaldError.decryptionFailed
-        }
+        // V2 framing strip (v2/framing.md §3).  Reject anything malformed
+        // with the same generic `.decryptionFailed` so the caller cannot
+        // distinguish a framing error from an AEAD failure (crypto.md §12).
         guard framed[0] == CryptoConstants.framingVersion else {
             throw SkaldError.decryptionFailed
         }
         let comp = framed[1]
         let compressed = framed.subdata(in: 2..<framed.count)
 
-        let body: Data
         switch comp {
         case CryptoConstants.compNone:
-            body = compressed
+            return compressed
         case CryptoConstants.compZlib:
-            body = try Self.zlibDecompress(compressed)
+            return try Self.zlibDecompress(compressed)
         default:
-            // Unknown `comp` — discard (v2/framing.md §3.3).
             throw SkaldError.decryptionFailed
         }
-
-        // Persist the new counter ONLY after the framing is fully validated
-        // and we have JSON-ready bytes in hand.
-        updateLastSeen(counter)
-        return body
     }
 
     // MARK: - Framing helpers (v2/framing.md)

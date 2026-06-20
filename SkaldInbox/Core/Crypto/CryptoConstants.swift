@@ -69,6 +69,26 @@ enum CryptoConstants {
     /// V2 framing `comp = 0x01`: zlib / DEFLATE. The iOS Compression framework
     /// exposes this as `COMPRESSION_ZLIB`.
     static let compZlib: UInt8 = 0x01
+
+    // MARK: Pipe protocol (docs/relay/pipe.md §2, §3, §4)
+
+    /// Domain separator for the data-plane auth challenge (pipe.md §3.1).
+    static let pipeAuthDomain: Data = Data("skald-pipe-auth-v1".utf8)
+
+    /// HKDF salt for deriving the per-pipe AES key from the ephemeral ECDH secret.
+    static let pipeKdfSalt: Data = Data("skald-pipe-v1".utf8)
+
+    /// HKDF info for the per-pipe AES-256-GCM key.
+    static let pipeKdfInfo: Data = Data("pipe-aes-256-gcm".utf8)
+
+    /// Nonce direction prefix: pipe initiator → responder.
+    static let nonceDirPipeInitiator: [UInt8] = [0x00, 0x00, 0x00, 0x03]
+
+    /// Nonce direction prefix: pipe responder → initiator.
+    static let nonceDirPipeResponder: [UInt8] = [0x00, 0x00, 0x00, 0x04]
+
+    /// Framing version byte for pipe signaling on the E2E channel (pipe.md §2).
+    static let framingVersionPipe: UInt8 = 0x02
 }
 
 // MARK: - SkaldError
