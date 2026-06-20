@@ -81,7 +81,9 @@ struct PairingView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             viewModel.attach(appState: appState)
-            if !awaiting {
+            if awaiting {
+                viewModel.awaitConfirmation()
+            } else {
                 viewModel.performPairing(qrData: qrData)
             }
         }

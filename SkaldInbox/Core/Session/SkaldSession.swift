@@ -65,6 +65,12 @@ actor SkaldSession {
     private var recvCounter: UInt64 = 0
     private var loopTask: Task<Void, Never>?
 
+    /// Post-pairing window: we've persisted credentials but the agent may not
+    /// have authorised this device yet.  While `true`, an `unauthorized` reply
+    /// is treated as "not yet" (retried with backoff) instead of terminal, per
+    /// relay-protocol.md §4.2.  Cleared on the first successful `auth_ok`.
+    private var awaitingAuthorization = false
+
     // MARK: - Multicast consumers
 
     private var inboundConsumers: [UUID: AsyncStream<Payload>.Continuation] = [:]
@@ -90,8 +96,19 @@ actor SkaldSession {
         }
     }
 
+    /// Begin the reconnect loop in "post-pairing" mode: the agent may not have
+    /// authorised this device yet, so the loop retries through `unauthorized`
+    /// (relay-protocol.md §4.2) until it receives `auth_ok`, instead of treating
+    /// the first rejection as terminal.  Called by `PairingViewModel` while the
+    /// app is in `.awaitingAuth`.  The flag clears itself on the first connect.
+    func startAwaitingAuthorization() {
+        awaitingAuthorization = true
+        start()
+    }
+
     /// Tear the session down and stop reconnecting.  Safe to call when stopped.
     func stop() async {
+        awaitingAuthorization = false
         loopTask?.cancel()
         loopTask = nil
         await closeTransport()
@@ -133,10 +150,18 @@ actor SkaldSession {
                 return
             } catch let err as SkaldError {
                 if case .relayError(let msg) = err, msg.contains("unauthorized") {
-                    setState(.unauthorized)
-                    return
+                    // Terminal — the relay revoked our identity — UNLESS we're
+                    // still in the post-pairing window: the agent may not have
+                    // authorised this device yet (relay-protocol.md §4.2), so
+                    // `unauthorized` is expected.  Fall through to backoff and
+                    // keep retrying until we get `auth_ok`.
+                    if !awaitingAuthorization {
+                        setState(.unauthorized)
+                        return
+                    }
+                } else {
+                    emitError(err.errorDescription ?? "Relay error")
                 }
-                emitError(err.errorDescription ?? "Relay error")
             } catch {
                 emitError(error.localizedDescription)
             }
@@ -177,6 +202,9 @@ actor SkaldSession {
     /// job (it reacts to `.connected` on the `states()` stream) — the session
     /// stays payload-agnostic.
     private func handleConnected(_ c: RelayClient) async {
+        // First successful auth ends the post-pairing window: from now on an
+        // `unauthorized` means a real revocation and is terminal.
+        awaitingAuthorization = false
         setState(.connected)
         await sendHelloIfNeeded()
         await c.receiveLoop(

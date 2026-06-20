@@ -39,11 +39,51 @@ final class PairingViewModel: ObservableObject {
         }
     }
 
+    /// Resume an in-progress pairing: credentials are already persisted (we're
+    /// in `.awaitingAuth`), so connect as the `.client` and wait for the agent
+    /// to authorise this device.  The relay replies `unauthorized` until then —
+    /// `startAwaitingAuthorization` keeps retrying with backoff (relay-protocol
+    /// §4.2).  The first `.connected` means we're authorised: hand off to
+    /// `AppState`, which swaps the root to the inbox.
+    func awaitConfirmation() {
+        guard let appState = appState else {
+            state = .error(String(localized: "State not initialized"))
+            return
+        }
+        currentTask?.cancel()
+        state = .awaitingConfirm
+        status = String(localized: "Awaiting confirmation on Skald…")
+        let session = appState.session
+        currentTask = Task { [weak self] in
+            await session.startAwaitingAuthorization()
+            for await connState in await session.states() {
+                if Task.isCancelled { return }
+                switch connState {
+                case .connected:
+                    self?.appState?.handleAuthOk()
+                    return
+                case .unauthorized:
+                    // Not expected while awaiting (the session retries through
+                    // it), but surface it defensively rather than hang.
+                    self?.state = .error(String(localized: "Authorization failed"))
+                    return
+                case .connecting, .disconnected:
+                    continue
+                }
+            }
+        }
+    }
+
     func cancel() {
         currentTask?.cancel()
         currentTask = nil
         state = .idle
         status = String(localized: "Cancelled")
+        // Tear the client session down so it doesn't keep retrying in the
+        // background after we return to the scan screen.
+        if let session = appState?.session {
+            Task { await session.stop() }
+        }
     }
 
     // MARK: - Internals
