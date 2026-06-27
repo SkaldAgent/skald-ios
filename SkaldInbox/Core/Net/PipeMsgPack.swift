@@ -600,13 +600,40 @@ enum PipeMsgPackDecoder {
     }
 
     private static func requireBin(_ dict: [String: PipeMsgPackValue], _ key: String, length: Int) throws -> Data {
-        guard case .binary(let data) = dict[key] else {
-            throw PipeMsgPackError.malformed("missing or wrong type for field '\(key)'")
-        }
+        let data = try coerceToData(dict[key], key: key)
         guard data.count == length else {
             throw PipeMsgPackError.invalidLength("field '\(key)' expected \(length)B, got \(data.count)B")
         }
         return data
+    }
+
+    /// Coerce a MsgPack value to raw bytes, accepting either a `bin` blob or an
+    /// array of byte-sized integers. The latter is what rmp-serde emits for a
+    /// Rust `Vec<u8>` lacking `#[serde(with = "serde_bytes")]` — the relay/agent
+    /// encode the pipe byte fields (connection_id, handshake, nonce, …) that way.
+    private static func coerceToData(_ value: PipeMsgPackValue?, key: String) throws -> Data {
+        switch value {
+        case .binary(let data):
+            return data
+        case .array(let arr):
+            var out = Data(capacity: arr.count)
+            for element in arr {
+                let v: UInt64
+                switch element {
+                case .uint(let u): v = u
+                case .int(let i) where i >= 0: v = UInt64(i)
+                default:
+                    throw PipeMsgPackError.malformed("field '\(key)' has non-byte array element")
+                }
+                guard v <= 0xFF else {
+                    throw PipeMsgPackError.malformed("field '\(key)' array element out of byte range")
+                }
+                out.append(UInt8(v))
+            }
+            return out
+        default:
+            throw PipeMsgPackError.malformed("missing or wrong type for field '\(key)'")
+        }
     }
 
     private static func requireString(_ dict: [String: PipeMsgPackValue], _ key: String) throws -> String {

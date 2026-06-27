@@ -229,33 +229,52 @@ struct RootView: View {
 
 // MARK: - MainTabView
 
-/// The "I'm paired" root — Inbox + Settings.  Both tabs share the same
-/// `InboxViewModel` so the WS session survives tab switches.
+/// The "I'm paired" root. Inbox and Settings are native screens; Projects and
+/// Chat share a single persistent web surface (`WebProxyView` + one WKWebView),
+/// so tapping a project and jumping into its chat happens inside one continuous
+/// page — the native tab bar simply follows the webview's URL.
+///
+/// A custom bottom bar is used instead of `TabView` because the webview must be
+/// a single, always-alive instance shared across two tabs (a `TabView` would
+/// give each tab its own, independent view tree).
 struct MainTabView: View {
 
     @EnvironmentObject private var appState: AppState
     @StateObject private var inboxVM = InboxViewModel()
+    @StateObject private var webVM = WebProxyViewModel()
+
+    @State private var tab: Tab = .inbox
+
+    /// Last document opened in the file viewer, persisted so the "Doc" tab can
+    /// re-open it across launches (empty until the user first opens a file).
+    @AppStorage("lastFilePath") private var lastFilePath: String = ""
 
     /// React to background → foreground so we re-open the WS session if it
     /// went down while suspended.
     @Environment(\.scenePhase) private var scenePhase
 
-    var body: some View {
-        TabView {
-            NavigationStack {
-                InboxView()
-                    .environmentObject(inboxVM)
-            }
-            .tabItem {
-                Label("Inbox", systemImage: "tray.full")
-            }
+    fileprivate enum Tab: Hashable { case inbox, projects, chat, doc, settings }
 
-            NavigationStack {
-                SettingsView()
-            }
-            .tabItem {
-                Label("Settings", systemImage: "gearshape")
-            }
+    private var showsWeb: Bool { tab == .projects || tab == .chat || tab == .doc }
+
+    /// The section the webview should currently show, derived from the tab.
+    private var webSection: WebSection {
+        switch tab {
+        case .projects: return .projects
+        case .doc:      return .fileViewer
+        default:        return .chat
+        }
+    }
+
+    /// The document the webview should show, only while the Doc tab is active.
+    private var webFilePath: String? {
+        tab == .doc && !lastFilePath.isEmpty ? lastFilePath : nil
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            content
+            TabBar(tab: $tab)
         }
         .environmentObject(inboxVM)
         .task {
@@ -286,5 +305,94 @@ struct MainTabView: View {
                 break
             }
         }
+    }
+
+    /// ZStack so the web layer is always present in the hierarchy (keeping the
+    /// WKWebView + proxy alive) and simply hidden when a native tab is on top.
+    @ViewBuilder
+    private var content: some View {
+        ZStack {
+            WebProxyView(
+                vm: webVM,
+                section: webSection,
+                filePath: webFilePath,
+                active: showsWeb,
+                onSectionChange: handleWebSectionChange
+            )
+            .opacity(showsWeb ? 1 : 0)
+            .allowsHitTesting(showsWeb)
+
+            if tab == .inbox {
+                NavigationStack {
+                    InboxView()
+                }
+                .transition(.opacity)
+            } else if tab == .settings {
+                NavigationStack {
+                    SettingsView()
+                }
+                .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.15), value: tab)
+    }
+
+    /// The web SPA navigated on its own (e.g. a project was tapped, moving to
+    /// #/chat, or a file was opened from the chat → file viewer). Mirror that
+    /// into the native selection — but only while the user is already on a
+    /// web-backed tab, so background navigation never yanks them out of
+    /// Inbox/Settings.
+    private func handleWebSectionChange(_ newSection: WebSection, _ path: String?) {
+        guard showsWeb else { return }
+        let mapped: Tab
+        switch newSection {
+        case .projects:   mapped = .projects
+        case .chat:       mapped = .chat
+        case .fileViewer: mapped = .doc
+        }
+        // Remember the document so tapping Doc later re-opens it.
+        if newSection == .fileViewer, let path, !path.isEmpty { lastFilePath = path }
+        if mapped != tab { tab = mapped }
+    }
+}
+
+// MARK: - TabBar
+
+private struct TabBar: View {
+
+    @Binding var tab: MainTabView.Tab
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Divider()
+            HStack(spacing: 0) {
+                barButton(.inbox, systemImage: "tray.full", label: "Inbox")
+                barButton(.projects, systemImage: "folder", label: "Projects")
+                barButton(.chat, systemImage: "bubble.left", label: "Chat")
+                barButton(.doc, systemImage: "doc.text", label: "Doc")
+                barButton(.settings, systemImage: "gearshape", label: "Settings")
+            }
+            .frame(height: 49)
+        }
+        .background(.regularMaterial, ignoresSafeAreaEdges: .bottom)
+    }
+
+    @ViewBuilder
+    private func barButton(_ item: MainTabView.Tab, systemImage: String, label: String) -> some View {
+        let isSelected = tab == item
+        Button {
+            tab = item
+        } label: {
+            VStack(spacing: 4) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 20, weight: isSelected ? .semibold : .regular))
+                Text(label)
+                    .font(.caption2)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }

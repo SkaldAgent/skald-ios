@@ -11,6 +11,7 @@
 		19BA81B163E3FFBC2BC48814 /* SkaldApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9577A8CAFA15848D33DBB82 /* SkaldApp.swift */; };
 		1A38F7810B8C1FA8A89B640B /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED854AE8ABAA88A69C4AB7CF /* KeychainStore.swift */; };
 		1A8F9B10688710468047791D /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC30548CFFE5AA70FB06D295 /* NotificationService.swift */; };
+		1AFB7656DF5331D4B4E535FC /* WebProxyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7317231502D894F23F3983E9 /* WebProxyView.swift */; };
 		22C60DCCEE9DF278173C2DB9 /* SkaldSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A884681A0E3B3AAB3BB75B16 /* SkaldSession.swift */; };
 		2509367AC1C4E0CE61C2CA53 /* InboxViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2361CDC3F35D31BC424F1B /* InboxViewModel.swift */; };
 		26ECB2A1F1BDC464D2637404 /* PairingQR.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24B5AEB8809B0C91EDAD2EA2 /* PairingQR.swift */; };
@@ -26,8 +27,10 @@
 		687A5AF7A9A62E088ACAB895 /* SkaldInboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD4A930D7D6728BC1F63B5B2 /* SkaldInboxTests.swift */; };
 		68C4B71FF4435CB6F41B3083 /* Payloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDC8B8A139059FB192B687AA /* Payloads.swift */; };
 		75E9B0EDF4B74AEB6494A2DC /* PairedIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BAD9ACC7897BAAB242ABE20 /* PairedIdentity.swift */; };
+		78E251B5D300ED0B1E9B7F3E /* LocalHTTPProxyServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9458E2C1EC254CC761DA28E6 /* LocalHTTPProxyServer.swift */; };
 		7FAD8D72FA425F43AF3EC4D2 /* PipeTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925E7414DF748561AAA7FB7F /* PipeTypes.swift */; };
 		86AD222B41D7AB3CD9A9E52F /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3AD21ADB0046A172A95C84 /* ScanView.swift */; };
+		8AFF1D948E2659E8BA3DC042 /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63AE7E36D933A3F28B225E45 /* WebView.swift */; };
 		948BBE13D8DC15F51D5E265A /* PipeCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2E61A776B7D1F4489192670 /* PipeCrypto.swift */; };
 		9A67123FA54A088B1EBF5BB4 /* InboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D98F2CE5662171EA3FF9376 /* InboxView.swift */; };
 		9B0ABA47B9C97C15F7E8F0E6 /* CryptoEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3109A3BEC5D546E2268DD7F /* CryptoEngine.swift */; };
@@ -93,14 +96,17 @@
 		2B0D5E0EE6F0B81736B41293 /* ApprovalCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApprovalCard.swift; sourceTree = "<group>"; };
 		38C3AEDE3791974A1A2CF91D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		4AF47F69B68665B1A21B76DF /* ClarificationCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClarificationCard.swift; sourceTree = "<group>"; };
+		63AE7E36D933A3F28B225E45 /* WebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebView.swift; sourceTree = "<group>"; };
 		6FB7BDBC0343CCCF95A710D7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		721777B21F01BBF2C32BB1AE /* SkaldSession+Pipe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SkaldSession+Pipe.swift"; sourceTree = "<group>"; };
 		72265BDE27E8E846240AAD94 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		72B702F9E9765731C6E471DA /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
+		7317231502D894F23F3983E9 /* WebProxyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebProxyView.swift; sourceTree = "<group>"; };
 		744A908DDB0606A6430C4AAB /* ScanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanViewModel.swift; sourceTree = "<group>"; };
 		78CEC552540FA09B7DC38A85 /* RelayClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayClient.swift; sourceTree = "<group>"; };
 		7D98F2CE5662171EA3FF9376 /* InboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxView.swift; sourceTree = "<group>"; };
 		925E7414DF748561AAA7FB7F /* PipeTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipeTypes.swift; sourceTree = "<group>"; };
+		9458E2C1EC254CC761DA28E6 /* LocalHTTPProxyServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalHTTPProxyServer.swift; sourceTree = "<group>"; };
 		9BAD9ACC7897BAAB242ABE20 /* PairedIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairedIdentity.swift; sourceTree = "<group>"; };
 		A884681A0E3B3AAB3BB75B16 /* SkaldSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkaldSession.swift; sourceTree = "<group>"; };
 		AC2361CDC3F35D31BC424F1B /* InboxViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxViewModel.swift; sourceTree = "<group>"; };
@@ -164,6 +170,15 @@
 			path = Core;
 			sourceTree = "<group>";
 		};
+		0E821F81722696F8ABA987DB /* Web */ = {
+			isa = PBXGroup;
+			children = (
+				7317231502D894F23F3983E9 /* WebProxyView.swift */,
+				63AE7E36D933A3F28B225E45 /* WebView.swift */,
+			);
+			path = Web;
+			sourceTree = "<group>";
+		};
 		1DBAEFCDE6B28A2A4FF69AD9 /* App */ = {
 			isa = PBXGroup;
 			children = (
@@ -207,6 +222,7 @@
 				2F5EA65B7F8A0FB47E1750F2 /* Pairing */,
 				EB91329DBD0CD44AB94FB4CD /* Scan */,
 				412794B7377DFB4B90AE49A6 /* Settings */,
+				0E821F81722696F8ABA987DB /* Web */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -241,6 +257,7 @@
 			isa = PBXGroup;
 			children = (
 				DDF56F279C1F3BA0D44350A8 /* Proto */,
+				9458E2C1EC254CC761DA28E6 /* LocalHTTPProxyServer.swift */,
 				BB6428CFCF2AAA39CD84AC87 /* PipeConnection.swift */,
 				CE2292EAA4EBD771DB1D47FC /* PipeMsgPack.swift */,
 				925E7414DF748561AAA7FB7F /* PipeTypes.swift */,
@@ -520,6 +537,7 @@
 				2509367AC1C4E0CE61C2CA53 /* InboxViewModel.swift in Sources */,
 				D11014672DB63C787012E2F8 /* KeyManager.swift in Sources */,
 				1A38F7810B8C1FA8A89B640B /* KeychainStore.swift in Sources */,
+				78E251B5D300ED0B1E9B7F3E /* LocalHTTPProxyServer.swift in Sources */,
 				75E9B0EDF4B74AEB6494A2DC /* PairedIdentity.swift in Sources */,
 				A34ED79076376DFF65A7953F /* PairingQR.swift in Sources */,
 				A0EF140D74CF43AB60596AD1 /* PairingView.swift in Sources */,
@@ -538,6 +556,8 @@
 				19BA81B163E3FFBC2BC48814 /* SkaldApp.swift in Sources */,
 				EDD76F76926F9E3F19CBDBE5 /* SkaldSession+Pipe.swift in Sources */,
 				22C60DCCEE9DF278173C2DB9 /* SkaldSession.swift in Sources */,
+				1AFB7656DF5331D4B4E535FC /* WebProxyView.swift in Sources */,
+				8AFF1D948E2659E8BA3DC042 /* WebView.swift in Sources */,
 				B03280A0B68CE0EB44D6F5D3 /* relay_frame.pb.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

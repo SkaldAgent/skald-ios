@@ -149,7 +149,8 @@ extension SkaldSession {
         do {
             signal = try PipeSignal.decode(from: body)
         } catch {
-            log.warning("malformed pipe signal: \(error.localizedDescription, privacy: .public)")
+            let hex = body.prefix(64).map { String(format: "%02x", $0) }.joined()
+            log.warning("malformed pipe signal: \(error.localizedDescription, privacy: .public) body=\(body.count, privacy: .public)B hex=\(hex, privacy: .public)")
             return
         }
 

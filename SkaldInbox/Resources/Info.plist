@@ -24,10 +24,16 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Skald uses the camera to scan the pairing QR code shown by Skald.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Skald uses the microphone to record and transcribe audio.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
+		<!-- Allow plaintext http:// to loopback (127.0.0.1/::1) for the local
+		     proxy listener that tunnels WebView traffic through the relay. -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
 	</dict>
 	<key>UIApplicationSceneManifest</key>
 	<dict>

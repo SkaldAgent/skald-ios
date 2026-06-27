@@ -401,6 +401,54 @@ final class PipeTests: XCTestCase {
         XCTAssertEqual(decoded, signal)
     }
 
+    // MARK: - Cross-language wire compat with rmp-serde (Rust relay/agent)
+    //
+    // rmp-serde's `to_vec_named` encodes a Rust `Vec<u8>` (without serde_bytes)
+    // as a MsgPack *array of ints*, not `bin`. These vectors are the exact bytes
+    // emitted by `skald-relay-common`'s `encode(PipeSignal::Accept/Invite)`, so
+    // the decoder must accept array-encoded byte fields. Regression for the
+    // "pipe accept timeout" the WebView proxy hit on a real device.
+
+    func testPipeSignalAcceptDecodesRmpArrayEncoding() {
+        // PipeAccept { connection_id: [0xAB;32], suite: X25519Sealed,
+        //              handshake: [0xCD;32], compress: None }
+        let hex =
+            "81a641636365707484ad636f6e6e656374696f6e5f6964dc0020" +
+            String(repeating: "ccab", count: 32) +
+            "a57375697465ad7832353531392d7365616c6564a968616e647368616b65dc0020" +
+            String(repeating: "cccd", count: 32) +
+            "a8636f6d7072657373a46e6f6e65"
+        let decoded = try! PipeSignal.decode(from: try! Hex.decode(hex))
+        guard case .accept(let acc) = decoded else {
+            return XCTFail("expected .accept, got \(decoded)")
+        }
+        XCTAssertEqual(acc.connectionId, Data(repeating: 0xAB, count: 32))
+        XCTAssertEqual(acc.handshake, Data(repeating: 0xCD, count: 32))
+        XCTAssertEqual(acc.suite, .x25519Sealed)
+        XCTAssertEqual(acc.compress, .none)
+    }
+
+    func testPipeSignalInviteDecodesRmpArrayEncoding() {
+        // PipeInvite { connection_id: [0xAB;32], suite: X25519Sealed,
+        //   handshake: [0xCD;32], stream_type: "http-local-proxy",
+        //   compress: [None], headers: {} }
+        let hex =
+            "81a6496e7669746586ad636f6e6e656374696f6e5f6964dc0020" +
+            String(repeating: "ccab", count: 32) +
+            "a57375697465ad7832353531392d7365616c6564a968616e647368616b65dc0020" +
+            String(repeating: "cccd", count: 32) +
+            "ab73747265616d5f74797065b0687474702d6c6f63616c2d70726f7879" +
+            "a8636f6d707265737391a46e6f6e65a76865616465727380"
+        let decoded = try! PipeSignal.decode(from: try! Hex.decode(hex))
+        guard case .invite(let inv) = decoded else {
+            return XCTFail("expected .invite, got \(decoded)")
+        }
+        XCTAssertEqual(inv.connectionId, Data(repeating: 0xAB, count: 32))
+        XCTAssertEqual(inv.handshake, Data(repeating: 0xCD, count: 32))
+        XCTAssertEqual(inv.streamType, "http-local-proxy")
+        XCTAssertEqual(inv.compress, [.none])
+    }
+
     // MARK: - PipeAuth round-trip (MsgPack)
 
     func testPipeAuthRoundTrip() {
