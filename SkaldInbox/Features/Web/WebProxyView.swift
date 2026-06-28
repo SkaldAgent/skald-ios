@@ -35,14 +35,53 @@ final class WebProxyViewModel: ObservableObject {
     /// we don't open relay pipes on launch if the user never opens Projects/Chat.
     private var everActivated = false
 
+    /// Whether the loopback TCP listener is currently up. Decoupled from
+    /// `state == .ready` so we can tear the listener down when the app is
+    /// suspended (relay goes away) while keeping the WKWebView alive with its
+    /// cached content: `state` stays `.ready`, so the view never drops the
+    /// webview from the hierarchy, and the next foreground silently restarts
+    /// the listener on the same port.
+    private var listenerActive = false
+
+    /// Guards `sync()` against overlapping start attempts — it is async and can
+    /// be re-entered from `.task` / `.onChange` in quick succession.
+    private var listenerStarting = false
+
+    /// The URL we last handed to the WebView, or `nil` if the webview is not
+    /// currently mounted in the hierarchy. Memoised so that, on a silent
+    /// listener restart, we can reuse the exact same `URL` object when the port
+    /// is stable (preferred 50001): keeping `state` unchanged means the
+    /// `WebView` is not rebuilt and does not reload its content. Reset to
+    /// `nil` whenever a state transition would drop the webview (`.failed`,
+    /// `.notConnected`, full `stop()`).
+    private var lastReadyURL: URL?
+
     /// Reconcile the proxy with the connection state. Safe to call repeatedly
     /// (on appear, on every phase change, and when activation flips).
+    ///
+    /// The key invariant for background → foreground resilience: once the
+    /// WebView has loaded once (`lastReadyURL != nil`), the relay dropping
+    /// does NOT change `state` away from `.ready` — only the TCP listener is
+    /// stopped. The webview therefore stays mounted with its cached content,
+    /// and on reconnect the listener is restarted *silently* (without flashing
+    /// a `ProgressView`, which would destroy the webview) reusing the same URL
+    /// when the port is unchanged.
     ///
     /// - Parameters:
     ///   - connected: Whether the relay session is currently authenticated.
     ///   - active: Whether a web-backed tab is currently visible.
     func sync(session: SkaldSession, connected: Bool, active: Bool) async {
         guard connected else {
+            // Relay down. If the webview has already loaded once, keep it alive
+            // with its cached content: stop only the TCP listener and leave
+            // `state` as `.ready` so the view never drops the WKWebView.
+            if lastReadyURL != nil {
+                server?.stop()
+                server = nil
+                listenerActive = false
+                return
+            }
+            // Never been ready yet → show the not-connected placeholder.
             stop()
             state = .notConnected
             return
@@ -51,11 +90,19 @@ final class WebProxyViewModel: ObservableObject {
         // Don't spin up the proxy until the user first enters Projects/Chat.
         guard everActivated else { return }
 
-        // Already serving or mid-start → nothing to do.
-        if case .ready = state { return }
-        if case .starting = state { return }
+        // Listener already up, or a start is in flight → nothing to do.
+        if listenerActive || listenerStarting { return }
 
-        state = .starting
+        // A "silent" restart keeps the existing WKWebView mounted (no
+        // `.starting` → ProgressView flash that would destroy it). We only do
+        // this once the webview has loaded at least once.
+        let silentRestart = lastReadyURL != nil
+        if !silentRestart {
+            state = .starting
+        }
+        listenerStarting = true
+        defer { listenerStarting = false }
+
         let server = LocalHTTPProxyServer(session: session)
         self.server = server
         do {
@@ -65,12 +112,23 @@ final class WebProxyViewModel: ObservableObject {
             // hash) — this also saves a round-trip.
             guard let url = URL(string: "http://127.0.0.1:\(port)/mobile.html") else {
                 self.server = nil
+                self.lastReadyURL = nil
                 state = .failed("URL non valida")
                 return
             }
+            listenerActive = true
+            // Reuse the memoised URL when the port is unchanged so `state`
+            // stays `.ready(lastReadyURL)` — no value change → no view rebuild,
+            // no reload. If the port drifted (rare race on restart) or we are
+            // recovering from a non-`.ready` state, update the URL.
+            if silentRestart, url == lastReadyURL, case .ready = state {
+                return
+            }
+            lastReadyURL = url
             state = .ready(url)
         } catch {
             self.server = nil
+            self.lastReadyURL = nil
             state = .failed(error.localizedDescription)
         }
     }
@@ -78,6 +136,9 @@ final class WebProxyViewModel: ObservableObject {
     func stop() {
         server?.stop()
         server = nil
+        listenerActive = false
+        listenerStarting = false
+        lastReadyURL = nil
         switch state {
         case .ready, .starting:
             state = .idle

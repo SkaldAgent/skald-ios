@@ -367,6 +367,18 @@ actor RelayClient {
         try await sendFrame(frame)
     }
 
+    /// Ask the relay for the set of peers currently online in our namespace
+    /// (relay-protocol.md v2 §4).  The relay replies — to us only — with a
+    /// single `PresenceList{online}` frame, surfaced via the receive loop's
+    /// `onPresenceList` callback.  Cheap and idempotent; safe to call on every
+    /// (re)connect to seed the initial roster before the live `PresenceEvent`
+    /// deltas take over.
+    func requestPresence() async throws {
+        var frame = Skald_Relay_V2_RelayFrame()
+        frame.presenceRequest = Skald_Relay_V2_PresenceRequest()
+        try await sendFrame(frame)
+    }
+
     // MARK: - Keepalive (native WS ping/pong — relay-protocol.md v2 §1)
 
     /// Start a background task that pings the WS every 25s so that
@@ -423,6 +435,9 @@ actor RelayClient {
     ///                      (a `live` recipient was offline — relay did NOT
     ///                      queue or push).
     /// - `onPresenceEvent`: invoked for each `RelayFrame.presence_event`.
+    /// - `onPresenceList`:  invoked for each `RelayFrame.presence_list` (the
+    ///                      relay's reply to our `requestPresence()` — a full
+    ///                      snapshot of the namespace's online peers).
     /// - `onError`:         invoked once for a terminal error, then the
     ///                      loop returns.
     ///
@@ -435,6 +450,7 @@ actor RelayClient {
         onMessage: @escaping @Sendable (IncomingMessage) async -> Void,
         onPeerOffline: @escaping @Sendable (PeerOfflineNotice) async -> Void,
         onPresenceEvent: @escaping @Sendable (PresenceEventInfo) async -> Void,
+        onPresenceList: @escaping @Sendable ([Data]) async -> Void,
         onError: @escaping @Sendable (Error) -> Void
     ) async {
         log.debug("receiveLoop: reading self.task")
@@ -450,6 +466,7 @@ actor RelayClient {
             onMessage: onMessage,
             onPeerOffline: onPeerOffline,
             onPresenceEvent: onPresenceEvent,
+            onPresenceList: onPresenceList,
             onError: onError
         )
         log.debug("receiveLoop: receiveLoopInner returned")
@@ -463,6 +480,7 @@ actor RelayClient {
         onMessage: @escaping @Sendable (IncomingMessage) async -> Void,
         onPeerOffline: @escaping @Sendable (PeerOfflineNotice) async -> Void,
         onPresenceEvent: @escaping @Sendable (PresenceEventInfo) async -> Void,
+        onPresenceList: @escaping @Sendable ([Data]) async -> Void,
         onError: @escaping @Sendable (Error) -> Void
     ) async {
         while !Task.isCancelled {
@@ -483,7 +501,8 @@ actor RelayClient {
                         frame,
                         onMessage: onMessage,
                         onPeerOffline: onPeerOffline,
-                        onPresenceEvent: onPresenceEvent
+                        onPresenceEvent: onPresenceEvent,
+                        onPresenceList: onPresenceList
                     )
                 case .string(let s):
                     // V1 sent JSON text frames; V2 only uses binary.  If
@@ -511,14 +530,16 @@ actor RelayClient {
 
     /// Dispatch a parsed `RelayFrame` to the appropriate callback.
     /// Control frames (challenge, auth_*, authorize*, pairing_*,
-    /// client_paired, error, presence_request, presence_list) are not
-    /// expected during the receive loop (auth is handled in
-    /// `authenticate` before the loop runs); they are dropped silently.
+    /// client_paired, error, presence_request) are not expected during the
+    /// receive loop (auth is handled in `authenticate` before the loop runs);
+    /// they are dropped silently.  `presence_list` IS expected here — it is the
+    /// relay's reply to an in-session `requestPresence()`.
     private static func dispatchFrame(
         _ frame: Skald_Relay_V2_RelayFrame,
         onMessage: @escaping @Sendable (IncomingMessage) async -> Void,
         onPeerOffline: @escaping @Sendable (PeerOfflineNotice) async -> Void,
-        onPresenceEvent: @escaping @Sendable (PresenceEventInfo) async -> Void
+        onPresenceEvent: @escaping @Sendable (PresenceEventInfo) async -> Void,
+        onPresenceList: @escaping @Sendable ([Data]) async -> Void
     ) async {
         switch frame.frame {
         case .message(let msg):
@@ -546,13 +567,17 @@ actor RelayClient {
             case .UNRECOGNIZED(let i):     status = .other(i)
             }
             await onPresenceEvent(PresenceEventInfo(pubkey: ev.pubkey, status: status))
+        case .presenceList(let list):
+            // Snapshot reply to our `requestPresence()`.  Keep only well-formed
+            // 32B pubkeys; a misbehaving relay can't make us crash on a bad one.
+            await onPresenceList(list.online.filter { $0.count == 32 })
         case .challenge,
              .auth, .authOk, .authError,
              .authorize, .authorizeOk,
              .pairingStart, .pairingReady, .pairingStop, .pairingStopOk,
              .clientPaired,
              .error,
-             .presenceRequest, .presenceList:
+             .presenceRequest:
             // Control frames — not expected during the receive loop.
             return
         case nil:

@@ -79,12 +79,21 @@ actor SkaldSession {
     /// relay-protocol.md §4.2.  Cleared on the first successful `auth_ok`.
     private var awaitingAuthorization = false
 
+    // MARK: - Roster (namespace presence)
+
+    /// Raw 32B Ed25519 pubkeys of every peer the relay reports as online in our
+    /// namespace (agent + clients, including us).  Seeded by a `PresenceList`
+    /// snapshot on connect and kept current by `PresenceEvent` deltas; cleared
+    /// whenever we are not `.connected` (a stale list would be misleading).
+    private var onlinePeers: Set<Data> = []
+
     // MARK: - Multicast consumers
 
     private var inboundConsumers: [UUID: AsyncStream<Payload>.Continuation] = [:]
     private var presenceConsumers: [UUID: AsyncStream<AgentPresence>.Continuation] = [:]
     private var stateConsumers: [UUID: AsyncStream<ConnectionState>.Continuation] = [:]
     private var errorConsumers: [UUID: AsyncStream<String>.Continuation] = [:]
+    private var rosterConsumers: [UUID: AsyncStream<[Data]>.Continuation] = [:]
 
     // MARK: - Pipe layer state
 
@@ -228,6 +237,11 @@ actor SkaldSession {
         awaitingAuthorization = false
         setState(.connected)
         await sendHelloIfNeeded()
+        // Seed the namespace roster: the relay replies with a one-shot
+        // `PresenceList` snapshot, then keeps us current via `PresenceEvent`
+        // deltas in the loop below.  Best-effort — a failure just means the
+        // Settings roster stays empty until the next presence event.
+        try? await c.requestPresence()
         await c.receiveLoop(
             onMessage: { [weak self] msg in
                 await self?.handleIncoming(msg)
@@ -237,6 +251,9 @@ actor SkaldSession {
             },
             onPresenceEvent: { [weak self] event in
                 await self?.handlePresence(event)
+            },
+            onPresenceList: { [weak self] peers in
+                await self?.handlePresenceList(peers)
             },
             onError: { [weak self] err in
                 let descr = (err as? SkaldError)?.errorDescription ?? err.localizedDescription
@@ -310,15 +327,36 @@ actor SkaldSession {
         emitPresence(.offline)
     }
 
-    /// A presence change from the relay.  We forward only events about the
-    /// agent; subscribers (InboxViewModel) decide what to do (e.g. re-sync).
+    /// A presence change from the relay.  Two consumers:
+    ///   1. The namespace roster (every peer) — drives the Settings device list.
+    ///   2. The agent-presence collapse (agent only) — drives the InboxViewModel
+    ///      re-sync.  This second behaviour is unchanged.
     private func handlePresence(_ event: PresenceEventInfo) async {
+        guard event.pubkey.count == 32 else { return }
+
+        // 1. Roster: apply the delta for any peer, then republish.
+        switch event.status {
+        case .online:  onlinePeers.insert(event.pubkey)
+        case .offline: onlinePeers.remove(event.pubkey)
+        case .other:   break
+        }
+        emitRoster()
+
+        // 2. Agent-presence collapse: forward only events about the agent;
+        //    subscribers (InboxViewModel) decide what to do (e.g. re-sync).
         guard let agentEd = identity?.agentEd25519Pub, event.pubkey == agentEd else { return }
         switch event.status {
         case .online:  emitPresence(.online)
         case .offline: emitPresence(.offline)
         case .other:   break
         }
+    }
+
+    /// Full snapshot of the namespace's online peers, in reply to our
+    /// `requestPresence()` on connect.  Replaces the roster wholesale.
+    private func handlePresenceList(_ peers: [Data]) async {
+        onlinePeers = Set(peers.filter { $0.count == 32 })
+        emitRoster()
     }
 
     // MARK: - Send
@@ -505,6 +543,23 @@ actor SkaldSession {
         return stream
     }
 
+    /// Subscribe to the namespace roster: the set of raw 32B Ed25519 pubkeys
+    /// the relay reports as online (agent + clients, including us).  The current
+    /// snapshot is delivered immediately on subscribe, so a screen that opens
+    /// after the session connected still sees the list.  Each emission is a full
+    /// sorted snapshot — consumers replace, not merge.
+    func roster() -> AsyncStream<[Data]> {
+        var cont: AsyncStream<[Data]>.Continuation!
+        let stream = AsyncStream<[Data]> { cont = $0 }
+        let id = UUID()
+        rosterConsumers[id] = cont
+        cont.yield(sortedRoster())
+        cont.onTermination = { [weak self] _ in
+            Task { await self?.removeRoster(id) }
+        }
+        return stream
+    }
+
     /// Subscribe to connection-state changes.  The current state is delivered
     /// immediately on subscribe, so late subscribers are not left in the dark.
     func states() -> AsyncStream<ConnectionState> {
@@ -536,6 +591,7 @@ actor SkaldSession {
     private func removePresence(_ id: UUID) { presenceConsumers[id] = nil }
     private func removeState(_ id: UUID)    { stateConsumers[id] = nil }
     private func removeError(_ id: UUID)    { errorConsumers[id] = nil }
+    private func removeRoster(_ id: UUID)   { rosterConsumers[id] = nil }
 
     private func broadcast(_ payload: Payload) {
         for c in inboundConsumers.values { c.yield(payload) }
@@ -545,8 +601,26 @@ actor SkaldSession {
         for c in presenceConsumers.values { c.yield(presence) }
     }
 
+    private func emitRoster() {
+        let snapshot = sortedRoster()
+        for c in rosterConsumers.values { c.yield(snapshot) }
+    }
+
+    /// A stable-ordered snapshot of `onlinePeers` so the UI list doesn't shuffle
+    /// between emissions (Set has no defined order).
+    private func sortedRoster() -> [Data] {
+        onlinePeers.sorted { $0.lexicographicallyPrecedes($1) }
+    }
+
     private func setState(_ state: ConnectionState) {
         connectionState = state
+        // Presence is only meaningful while connected.  Any other state means
+        // the roster is stale — drop it (and tell subscribers) so Settings
+        // never shows phantom "online" devices after a drop.
+        if state != .connected, !onlinePeers.isEmpty {
+            onlinePeers.removeAll()
+            emitRoster()
+        }
         for c in stateConsumers.values { c.yield(state) }
     }
 

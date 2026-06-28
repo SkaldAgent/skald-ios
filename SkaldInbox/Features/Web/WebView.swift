@@ -28,6 +28,7 @@
 import SwiftUI
 import WebKit
 import UIKit
+import os
 
 // MARK: - WebSection
 
@@ -146,7 +147,7 @@ struct WebView: UIViewRepresentable {
 
     // MARK: - Coordinator
 
-    final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate {
+    final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
 
         /// Message handler name the web SPA posts to (`_notifyNative`).
         static let messageName = "skaldNav"
@@ -162,6 +163,13 @@ struct WebView: UIViewRepresentable {
         /// path changes (file A → file B).
         var lastFilePath: String?
         var onSectionChange: (WebSection, String?) -> Void
+
+        /// Destination URL for the in-flight file download (`nil` when none is
+        /// active). Set in `download(_:decideDestinationUsing:…)`, read in
+        /// `downloadDidFinish(_:)` to present the share sheet.
+        var downloadDestination: URL?
+
+        private let log = Logger(subsystem: "net.skaldagent.inbox", category: "WebView")
 
         init(onSectionChange: @escaping (WebSection, String?) -> Void) {
             self.onSectionChange = onSectionChange
@@ -263,6 +271,121 @@ struct WebView: UIViewRepresentable {
             decisionHandler: @escaping (WKPermissionDecision) -> Void
         ) {
             decisionHandler(.grant)
+        }
+
+        // MARK: Downloads & inline-render safeguard
+
+        /// Decides how to handle a navigation **response**.
+        /// • Sub-frame responses (the file viewer's `blob:` iframe) → allow; they
+        ///   never replace the SPA.
+        /// • Main-frame HTML → allow (renders the SPA normally).
+        /// • Any other main-frame response → `.download`. Returning `.download`
+        ///   is what makes WKWebView turn the response into a `WKDownload` (via
+        ///   `webView(_:navigationResponse:didBecome:)`) instead of rendering it
+        ///   inline — which is what used to destroy the SPA ("stuck on a PDF").
+        ///   Covers the file-viewer's "Download" button (Content-Type
+        ///   `application/pdf`, `Content-Disposition: attachment`) and any other
+        ///   accidental non-HTML top-level navigation.
+        func webView(
+            _ webView: WKWebView,
+            decidePolicyFor navigationResponse: WKNavigationResponse,
+            decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
+        ) {
+            guard navigationResponse.isForMainFrame else {
+                decisionHandler(.allow)
+                return
+            }
+            let mime = (navigationResponse.response.mimeType ?? "").lowercased()
+            if mime.contains("html") {
+                decisionHandler(.allow)
+            } else {
+                log.notice("main-frame non-HTML response → download (mime=\(mime, privacy: .public))")
+                decisionHandler(.download)
+            }
+        }
+
+        /// A main-frame response for which we returned `.download` became a
+        /// `WKDownload`. Adopt it so the `WKDownloadDelegate` methods below write
+        /// it to disk and present a share sheet.
+        func webView(
+            _ webView: WKWebView,
+            navigationResponse: WKNavigationResponse,
+            didBecome download: WKDownload
+        ) {
+            download.delegate = self
+        }
+
+        /// Same as above for action-driven downloads (some `<a download>` taps
+        /// surface here rather than via the response). Belt-and-braces.
+        func webView(
+            _ webView: WKWebView,
+            navigationAction: WKNavigationAction,
+            didBecome download: WKDownload
+        ) {
+            download.delegate = self
+        }
+
+        // MARK: WKDownloadDelegate
+
+        func download(
+            _ download: WKDownload,
+            decideDestinationUsing response: URLResponse,
+            suggestedFilename: String,
+            completionHandler: @escaping (URL?) -> Void
+        ) {
+            // WKDownload requires a file that doesn't yet exist, in an existing,
+            // writable directory. Use the temp dir and uniquify the name.
+            let dir = FileManager.default.temporaryDirectory
+            let stem = (suggestedFilename as NSString).deletingPathExtension
+            let ext = (suggestedFilename as NSString).pathExtension
+            var url = dir.appendingPathComponent(suggestedFilename)
+            var n = 1
+            while FileManager.default.fileExists(atPath: url.path) {
+                let name = ext.isEmpty ? "\(stem) (\(n))" : "\(stem) (\(n)).\(ext)"
+                url = dir.appendingPathComponent(name)
+                n += 1
+            }
+            downloadDestination = url
+            completionHandler(url)
+        }
+
+        func downloadDidFinish(_ download: WKDownload) {
+            guard let url = downloadDestination else { return }
+            presentShareSheet(for: url)
+        }
+
+        func download(_ download: WKDownload, didFailWithError error: any Error, resumeData: Data?) {
+            log.error("download failed: \(error.localizedDescription, privacy: .public)")
+            downloadDestination = nil
+        }
+
+        // MARK: Helpers
+
+        /// Present the system share sheet for a downloaded file URL.
+        private func presentShareSheet(for url: URL) {
+            guard let webView, let presenter = Self.topViewController(from: webView) else {
+                log.error("no presenter for share sheet (\(url.lastPathComponent, privacy: .public))")
+                return
+            }
+            let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+            // iPad presents a share sheet as a popover → needs an anchor.
+            if let pop = activity.popoverPresentationController {
+                pop.sourceView = webView
+                pop.sourceRect = CGRect(x: webView.bounds.midX, y: webView.bounds.midY, width: 1, height: 1)
+                pop.permittedArrowDirections = []
+            }
+            presenter.present(activity, animated: true)
+        }
+
+        /// Topmost view controller over the webView's window — the one that
+        /// should present the download share sheet.
+        private static func topViewController(from view: UIView?) -> UIViewController? {
+            guard let window = view?.window else { return nil }
+            var vc: UIViewController? = window.rootViewController
+            while let presented = vc?.presentedViewController {
+                vc = presented
+            }
+            return vc
         }
     }
 }

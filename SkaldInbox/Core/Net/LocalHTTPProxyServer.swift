@@ -12,6 +12,10 @@
 //  connection is mapped 1:1 to a transparent byte pipe — no HTTP parsing here;
 //  the agent side runs the actual HTTP server.
 //
+//  Port selection: prefers a stable high port (50 001) so WKWebView can reuse its
+//  HTTP cache across app launches. If that port is taken, falls back to an
+//  OS-assigned ephemeral port (port 0).
+//
 
 import Foundation
 import Network
@@ -22,6 +26,10 @@ final class LocalHTTPProxyServer {
 
     /// The pipe stream_type the agent's mobile connector listens for.
     static let streamType = "http-local-proxy"
+
+    /// Preferred stable port — keeps WKWebView cache alive across launches.
+    /// Change this if 50001 clashes with another service on your machine.
+    static let preferredPort: UInt16 = 50_001
 
     private let session: SkaldSession
     private var listener: NWListener?
@@ -34,14 +42,35 @@ final class LocalHTTPProxyServer {
 
     // MARK: - Lifecycle
 
-    /// Start listening on loopback with an OS-assigned port. Returns the bound port.
+    /// Start listening on loopback. Tries `preferredPort` first for WebView cache
+    /// stability; falls back to an OS-assigned ephemeral port if the preferred
+    /// port is already in use. Returns the bound port.
     func start() async throws -> UInt16 {
+        do {
+            return try await startOnPort(Self.preferredPort)
+        } catch {
+            log.warning("preferred port \(Self.preferredPort, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+        }
+        return try await startOnPort(0)
+    }
+
+    /// Start listening on a specific port (or 0 for OS-assigned).
+    /// Returns the bound port once the listener is `.ready`.
+    private func startOnPort(_ port: UInt16) async throws -> UInt16 {
         let params = NWParameters.tcp
         // Pin the listener to loopback so nothing else on the network can reach it.
         params.requiredLocalEndpoint = NWEndpoint.hostPort(host: "127.0.0.1", port: .any)
         params.allowLocalEndpointReuse = true
 
-        let listener = try NWListener(using: params)
+        let listener: NWListener
+        if port == 0 {
+            listener = try NWListener(using: params)
+        } else {
+            guard let nwPort = NWEndpoint.Port(rawValue: port) else {
+                throw SkaldError.networkError("proxy: invalid port \(port)")
+            }
+            listener = try NWListener(using: params, on: nwPort)
+        }
         self.listener = listener
 
         listener.newConnectionHandler = { [weak self] conn in
@@ -55,9 +84,9 @@ final class LocalHTTPProxyServer {
                 case .ready:
                     guard !resumed else { return }
                     resumed = true
-                    let port = listener.port?.rawValue ?? 0
-                    self?.log.info("proxy listening on 127.0.0.1:\(port, privacy: .public)")
-                    cont.resume(returning: port)
+                    let boundPort = listener.port?.rawValue ?? 0
+                    self?.log.info("proxy listening on 127.0.0.1:\(boundPort, privacy: .public)")
+                    cont.resume(returning: boundPort)
                 case .failed(let error):
                     guard !resumed else { return }
                     resumed = true

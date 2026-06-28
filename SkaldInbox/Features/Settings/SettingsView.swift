@@ -20,6 +20,7 @@ struct SettingsView: View {
         Form {
             statusSection
             namespaceSection
+            connectedDevicesSection
             deviceSection
             logoutSection
             aboutSection
@@ -119,6 +120,40 @@ struct SettingsView: View {
         } footer: {
             Text("Tap to copy the full identifier.")
                 .font(.caption)
+        }
+    }
+
+    private var connectedDevicesSection: some View {
+        Section {
+            if vm.devices.isEmpty {
+                Text("Not connected")
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(vm.devices) { device in
+                    deviceRow(device)
+                }
+            }
+        } header: {
+            Text("Connected Devices")
+        } footer: {
+            Text("Devices currently connected to the relay in your namespace.")
+                .font(.caption)
+        }
+    }
+
+    @ViewBuilder
+    private func deviceRow(_ device: SettingsViewModel.RosterDevice) -> some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(.green)
+                .frame(width: 8, height: 8)
+            Text(device.label)
+            Spacer()
+            Text(device.fingerprint)
+                .font(.footnote.monospaced())
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
         }
     }
 
