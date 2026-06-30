@@ -17,6 +17,7 @@ struct InboxView: View {
 
     @State private var pendingReject: ApprovalItem?
     @State private var pendingRespond: ClarificationItem?
+    @State private var pendingElicitation: ElicitationItem?
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -58,6 +59,22 @@ struct InboxView: View {
                 }
             )
         }
+        .sheet(item: $pendingElicitation) { item in
+            ElicitationResponseSheet(
+                item: item,
+                onCancel: { pendingElicitation = nil },
+                onAccept: { value in
+                    let target = item
+                    pendingElicitation = nil
+                    await vm.acceptElicitation(target, value: value)
+                },
+                onDecline: {
+                    let target = item
+                    pendingElicitation = nil
+                    await vm.declineElicitation(target)
+                }
+            )
+        }
         .onReceive(NotificationCenter.default.publisher(for: Foundation.Notification.Name.skaldOpenReject)) { note in
             let rid = (note.userInfo?["request_id"] as? String) ?? ""
             if let item = vm.approvals.first(where: { $0.request_id == rid }) {
@@ -70,13 +87,19 @@ struct InboxView: View {
                 pendingRespond = item
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: Foundation.Notification.Name.skaldOpenElicitation)) { note in
+            let rid = (note.userInfo?["request_id"] as? String) ?? ""
+            if let item = vm.elicitations.first(where: { $0.request_id == rid }) {
+                pendingElicitation = item
+            }
+        }
     }
 
     // MARK: - Subviews
 
     @ViewBuilder
     private var contentList: some View {
-        if vm.approvals.isEmpty && vm.clarifications.isEmpty {
+        if vm.approvals.isEmpty && vm.clarifications.isEmpty && vm.elicitations.isEmpty {
             GeometryReader { proxy in
                 ScrollView {
                     emptyState
@@ -116,11 +139,30 @@ struct InboxView: View {
                         }
                     }
                 }
+                if !vm.elicitations.isEmpty {
+                    Section("Secrets requested") {
+                        ForEach(vm.elicitations, id: \.request_id) { item in
+                            ElicitationCard(
+                                item: item,
+                                onAccept: { value in
+                                    Task { await vm.acceptElicitation(item, value: value) }
+                                },
+                                onDecline: {
+                                    Task { await vm.declineElicitation(item) }
+                                }
+                            )
+                            .listRowInsets(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8))
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                        }
+                    }
+                }
             }
             .listStyle(.plain)
             .refreshable { await vm.refresh() }
             .animation(.default, value: vm.approvals.count)
             .animation(.default, value: vm.clarifications.count)
+            .animation(.default, value: vm.elicitations.count)
         }
     }
 
@@ -230,6 +272,78 @@ private struct ClarificationResponseSheet: View {
                 }
             }
             .onAppear { focused = true }
+        }
+    }
+}
+
+// MARK: - Elicitation response sheet (used when the user tapped "Enter secret" on a push)
+
+private struct ElicitationResponseSheet: View {
+    let item: ElicitationItem
+    let onCancel: () -> Void
+    /// Accept: `nil` for a confirmation, the typed value for an input prompt.
+    let onAccept: (String?) async -> Void
+    let onDecline: () async -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var value: String = ""
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Text(item.message)
+                        .font(.body)
+                } header: {
+                    Label(item.server_name, systemImage: "lock.fill")
+                }
+
+                if !item.is_confirmation {
+                    Section(item.field_name ?? "Value") {
+                        Group {
+                            if item.sensitive {
+                                SecureField("Enter here…", text: $value)
+                            } else {
+                                TextField("Enter here…", text: $value)
+                            }
+                        }
+                        .focused($focused)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    }
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        Task {
+                            await onDecline()
+                            dismiss()
+                        }
+                    } label: {
+                        Text("Decline")
+                    }
+                }
+            }
+            .navigationTitle("Secret requested")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { onCancel(); dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(item.is_confirmation ? "Allow" : "Submit") {
+                        let captured = item.is_confirmation ? nil : value
+                        value = ""
+                        Task {
+                            await onAccept(captured)
+                            dismiss()
+                        }
+                    }
+                    .disabled(!item.is_confirmation && value.isEmpty)
+                }
+            }
+            .onAppear { if !item.is_confirmation { focused = true } }
         }
     }
 }

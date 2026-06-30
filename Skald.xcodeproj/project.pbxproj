@@ -53,6 +53,7 @@
 		D74D4D1D2EADECB5ED675E5D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72265BDE27E8E846240AAD94 /* SettingsView.swift */; };
 		EA744F17D163BEA356CE57E9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C7E7822D46167D366C543A2E /* Assets.xcassets */; };
 		EDD76F76926F9E3F19CBDBE5 /* SkaldSession+Pipe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 721777B21F01BBF2C32BB1AE /* SkaldSession+Pipe.swift */; };
+		F2D3DD0FBB13C985CFDDDE4D /* ElicitationCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A2685DA5474859398FDB2D /* ElicitationCard.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -93,6 +94,7 @@
 		12EDE3B38F5ABBA6E481BED1 /* PairingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingViewModel.swift; sourceTree = "<group>"; };
 		24B5AEB8809B0C91EDAD2EA2 /* PairingQR.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingQR.swift; sourceTree = "<group>"; };
 		24FB2A7F724195A5D54F5596 /* KeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyManager.swift; sourceTree = "<group>"; };
+		26A2685DA5474859398FDB2D /* ElicitationCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElicitationCard.swift; sourceTree = "<group>"; };
 		2B0D5E0EE6F0B81736B41293 /* ApprovalCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApprovalCard.swift; sourceTree = "<group>"; };
 		38C3AEDE3791974A1A2CF91D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		4AF47F69B68665B1A21B76DF /* ClarificationCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClarificationCard.swift; sourceTree = "<group>"; };
@@ -362,6 +364,7 @@
 			children = (
 				2B0D5E0EE6F0B81736B41293 /* ApprovalCard.swift */,
 				4AF47F69B68665B1A21B76DF /* ClarificationCard.swift */,
+				26A2685DA5474859398FDB2D /* ElicitationCard.swift */,
 				7D98F2CE5662171EA3FF9376 /* InboxView.swift */,
 				AC2361CDC3F35D31BC424F1B /* InboxViewModel.swift */,
 				0CB264D700B7F053965417E2 /* RejectReasonView.swift */,
@@ -533,6 +536,7 @@
 				514D3836B43F96E4A66AA024 /* ClarificationCard.swift in Sources */,
 				A391339CFC8C0E0876185231 /* CryptoConstants.swift in Sources */,
 				9B0ABA47B9C97C15F7E8F0E6 /* CryptoEngine.swift in Sources */,
+				F2D3DD0FBB13C985CFDDDE4D /* ElicitationCard.swift in Sources */,
 				9A67123FA54A088B1EBF5BB4 /* InboxView.swift in Sources */,
 				2509367AC1C4E0CE61C2CA53 /* InboxViewModel.swift in Sources */,
 				D11014672DB63C787012E2F8 /* KeyManager.swift in Sources */,

@@ -182,6 +182,25 @@ final class NotificationService: UNNotificationServiceExtension {
                         "request_id": rid,
                         "kind": "clarification"
                     ]
+                } else if let elic = u.elicitations?.first {
+                    let rid = elic.request_id
+                    // Prefix the dedup key by type: elicitation rowids live in a
+                    // different table and could collide with an approval/clar id.
+                    let dedupKey = "elic:\(rid)"
+                    if Self.shownRequestIDs.contains(dedupKey) {
+                        showGeneric("dedup", extra: ["request_id": rid])
+                        return
+                    }
+                    Self.shownRequestIDs.insert(dedupKey)
+                    // Use the elicitation category so the alert offers the
+                    // "Enter secret" / "Decline" actions, not approve/reject.
+                    bestAttempt.categoryIdentifier = "skald_elicitation"
+                    bestAttempt.title = "🔐 \(elic.server_name)"
+                    bestAttempt.body = elic.message      // prompt only — never the secret
+                    bestAttempt.userInfo = [
+                        "request_id": rid,
+                        "kind": "elicitation"
+                    ]
                 } else {
                     // Empty inbox — nothing rich to show.
                     showGeneric("empty")
@@ -193,7 +212,7 @@ final class NotificationService: UNNotificationServiceExtension {
                 bestAttempt.body = n.body
                 bestAttempt.userInfo = ["kind": "notification"]
 
-            case .ack, .hello, .inboxRequest, .approvalResponse, .clarificationResponse, .logout:
+            case .ack, .hello, .inboxRequest, .approvalResponse, .clarificationResponse, .elicitationResponse, .logout:
                 // These payloads don't carry a user-facing alert (most are
                 // client→agent or terminal messages).  Show a generic card.
                 showGeneric("unknown")

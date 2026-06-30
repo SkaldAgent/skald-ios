@@ -22,6 +22,7 @@ final class InboxViewModel: ObservableObject {
 
     @Published private(set) var approvals: [ApprovalItem] = []
     @Published private(set) var clarifications: [ClarificationItem] = []
+    @Published private(set) var elicitations: [ElicitationItem] = []
     @Published private(set) var badge: Int = 0
     @Published private(set) var connectionState: ConnectionState = .disconnected
 
@@ -222,6 +223,44 @@ final class InboxViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Elicitations (MCP secret input)
+
+    /// Accept an MCP elicitation.  For an input prompt pass the typed `value`
+    /// (sealed E2E, never logged); for a confirmation pass `nil`.  The value is
+    /// keyed by the elicitation's `field_name` (fallback `"value"`).
+    func acceptElicitation(_ item: ElicitationItem, value: String?) async {
+        var content: [String: String]?
+        if let value = value {
+            content = [(item.field_name ?? "value"): value]
+        }
+        await sendElicitation(item: item, action: "accept", content: content)
+    }
+
+    /// Decline an MCP elicitation (`action: "decline"`, no content).
+    func declineElicitation(_ item: ElicitationItem) async {
+        await sendElicitation(item: item, action: "decline", content: nil)
+    }
+
+    private func sendElicitation(item: ElicitationItem, action: String, content: [String: String]?) async {
+        guard let session = session else { return }
+        let payload = ElicitationResponse(
+            v: 1,
+            kind: "elicitation_response",
+            id: UUID().uuidString.lowercased(),
+            ts: Self.nowMillis(),
+            request_id: item.request_id,
+            action: action,
+            content: content
+        )
+        do {
+            try await session.send(payload)
+            applyLocalRemoveElicitation(requestId: item.request_id)
+        } catch {
+            // Never include `content`/value in the surfaced error.
+            lastError = String(localized: "Send response: ") + error.localizedDescription
+        }
+    }
+
     // MARK: - Outgoing inbox_request
 
     private func sendInboxRequest() async {
@@ -242,9 +281,10 @@ final class InboxViewModel: ObservableObject {
         case .inboxUpdate(let u):
             approvals = u.approvals
             clarifications = u.clarifications
+            elicitations = u.elicitations ?? []
             badge = u.badge
             lastInboxUpdateAt = Date()
-        case .notification, .ack, .hello, .inboxRequest, .approvalResponse, .clarificationResponse, .logout:
+        case .notification, .ack, .hello, .inboxRequest, .approvalResponse, .clarificationResponse, .elicitationResponse, .logout:
             // We don't act on these (acks are informational; the rest are our
             // own outgoing messages that the relay echoes back).
             break
@@ -258,6 +298,11 @@ final class InboxViewModel: ObservableObject {
 
     private func applyLocalRemoveClarification(requestId: String) {
         clarifications.removeAll { $0.request_id == requestId }
+        if badge > 0 { badge -= 1 }
+    }
+
+    private func applyLocalRemoveElicitation(requestId: String) {
+        elicitations.removeAll { $0.request_id == requestId }
         if badge > 0 { badge -= 1 }
     }
 
@@ -285,5 +330,9 @@ extension ApprovalItem: Identifiable {
 }
 
 extension ClarificationItem: Identifiable {
+    var id: String { request_id }
+}
+
+extension ElicitationItem: Identifiable {
     var id: String { request_id }
 }

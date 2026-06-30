@@ -145,3 +145,4 @@ fastlane/screenshots/**/*.jpg
 .metadata/
 .screenshots/
 /data/
+/todo/

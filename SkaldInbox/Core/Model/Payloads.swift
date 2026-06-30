@@ -35,6 +35,7 @@ enum PayloadKind: String, Codable, Equatable {
     case inboxRequest          = "inbox_request"
     case approvalResponse      = "approval_response"
     case clarificationResponse = "clarification_response"
+    case elicitationResponse   = "elicitation_response"
     case logout                = "logout"
     case ack                   = "ack"
 }
@@ -126,6 +127,22 @@ struct ClarificationItem: Codable, Equatable {
     let created_at: Int64   // unix ms
 }
 
+/// An item in the pending-elicitations list of an `inbox_update`.
+///
+/// An MCP server requested input the LLM must not see (e.g. an SSH password).
+/// Carries only the prompt **metadata** — never the value.  `field_name` is the
+/// key the agent expects back inside the response `content`; `sensitive` asks
+/// the UI for a masked field; `is_confirmation` means yes/no with no input.
+struct ElicitationItem: Codable, Equatable {
+    let request_id: String
+    let server_name: String
+    let message: String
+    let field_name: String?
+    let sensitive: Bool
+    let is_confirmation: Bool
+    let created_at: Int64   // unix ms
+}
+
 /// `kind: "inbox_update"` — agent → client, full snapshot (payloads.md §3.1).
 struct InboxUpdate: Codable, Equatable {
     let v: Int
@@ -135,6 +152,9 @@ struct InboxUpdate: Codable, Equatable {
     let badge: Int
     let approvals: [ApprovalItem]
     let clarifications: [ClarificationItem]
+    /// Optional for forward/backward-compat: agents that predate MCP
+    /// elicitation simply omit the key (decoded as nil → treat as empty).
+    let elicitations: [ElicitationItem]?
 }
 
 /// `kind: "notification"` — agent → client (payloads.md §3.2).
@@ -208,6 +228,22 @@ struct ClarificationResponse: Codable, Equatable {
     let answer: String
 }
 
+/// `kind: "elicitation_response"` — client → agent.
+///
+/// Reply to an MCP elicitation.  `content` carries the field values for
+/// `action == "accept"` (keyed by the elicitation's `field_name`, fallback
+/// `"value"`); it is nil for `"decline"` / `"cancel"`.  The value may be a
+/// secret — it is sealed E2E by the session and must never be logged.
+struct ElicitationResponse: Codable, Equatable {
+    let v: Int
+    let kind: String
+    let id: String
+    let ts: Int64
+    let request_id: String
+    let action: String              // "accept" | "decline" | "cancel"
+    let content: [String: String]?
+}
+
 /// `kind: "logout"` — client → agent (payloads.md §4.4).
 struct LogoutPayload: Codable, Equatable {
     let v: Int
@@ -233,6 +269,7 @@ enum Payload: Equatable, Sendable {
     case inboxRequest(InboxRequest)
     case approvalResponse(ApprovalResponse)
     case clarificationResponse(ClarificationResponse)
+    case elicitationResponse(ElicitationResponse)
     case logout(LogoutPayload)
 
     /// Convenience accessor for the base envelope (common to every case).
@@ -245,6 +282,7 @@ enum Payload: Equatable, Sendable {
         case .inboxRequest(let p):          return EnvelopeBase(v: p.v, kind: p.kind, id: p.id, ts: p.ts)
         case .approvalResponse(let p):      return EnvelopeBase(v: p.v, kind: p.kind, id: p.id, ts: p.ts)
         case .clarificationResponse(let p): return EnvelopeBase(v: p.v, kind: p.kind, id: p.id, ts: p.ts)
+        case .elicitationResponse(let p):   return EnvelopeBase(v: p.v, kind: p.kind, id: p.id, ts: p.ts)
         case .logout(let p):                return EnvelopeBase(v: p.v, kind: p.kind, id: p.id, ts: p.ts)
         }
     }
@@ -297,6 +335,9 @@ extension Payload: Codable {
         case .clarificationResponse?:
             let p = try ClarificationResponse(from: decoder)
             self = .clarificationResponse(p)
+        case .elicitationResponse?:
+            let p = try ElicitationResponse(from: decoder)
+            self = .elicitationResponse(p)
         case .logout?:
             let p = try LogoutPayload(from: decoder)
             self = .logout(p)
@@ -319,6 +360,7 @@ extension Payload: Codable {
         case .inboxRequest(let p):          try p.encode(to: encoder)
         case .approvalResponse(let p):      try p.encode(to: encoder)
         case .clarificationResponse(let p): try p.encode(to: encoder)
+        case .elicitationResponse(let p):   try p.encode(to: encoder)
         case .logout(let p):                try p.encode(to: encoder)
         }
     }

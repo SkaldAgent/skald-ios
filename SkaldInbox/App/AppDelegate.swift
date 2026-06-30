@@ -20,6 +20,10 @@ extension Foundation.Notification.Name {
     /// Posted when the user taps RESPOND on a clarification push.  The
     /// InboxView listens and scrolls to / focuses the matching item.
     static let skaldOpenRespond = Foundation.Notification.Name("net.skaldagent.inbox.openRespond")
+
+    /// Posted when the user taps "Enter secret" on an elicitation push.  The
+    /// InboxView listens and presents the secure `ElicitationResponseSheet`.
+    static let skaldOpenElicitation = Foundation.Notification.Name("net.skaldagent.inbox.openElicitation")
 }
 
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
@@ -107,7 +111,30 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             intentIdentifiers: [],
             options: []
         )
-        UNUserNotificationCenter.current().setNotificationCategories([category])
+
+        // Elicitation gets its own category: the secret must be typed in-app
+        // (no text input from a notification), so the action just foregrounds
+        // the app onto the secure sheet.  "Decline" is a one-shot that needs no
+        // value.  Kept separate from `skald_inbox` so approvals/clarifications
+        // never show these buttons.
+        let enterSecret = UNNotificationAction(
+            identifier: "ENTER_SECRET",
+            title: String(localized: "🔐 Enter secret"),
+            options: [.foreground]
+        )
+        let declineElicitation = UNNotificationAction(
+            identifier: "DECLINE_ELICITATION",
+            title: String(localized: "Decline"),
+            options: [.destructive]
+        )
+        let elicitationCategory = UNNotificationCategory(
+            identifier: "skald_elicitation",
+            actions: [enterSecret, declineElicitation],
+            intentIdentifiers: [],
+            options: []
+        )
+
+        UNUserNotificationCenter.current().setNotificationCategories([category, elicitationCategory])
     }
 
     // MARK: - UNUserNotificationCenterDelegate
@@ -160,6 +187,22 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             )
             completionHandler()
 
+        case "ENTER_SECRET":
+            // Foreground the app onto the secure sheet — secrets are never
+            // typed from a notification.
+            NotificationCenter.default.post(
+                name: Foundation.Notification.Name.skaldOpenElicitation,
+                object: nil,
+                userInfo: ["request_id": requestId]
+            )
+            completionHandler()
+
+        case "DECLINE_ELICITATION":
+            Task.detached(priority: .userInitiated) { [weak self] in
+                await self?.sendOneShotElicitation(requestId: requestId, action: "decline")
+            }
+            completionHandler()
+
         default:
             // Default tap — no-op.  The InboxView will still show the item
             // when the user opens the app.
@@ -192,6 +235,29 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             try await SkaldSession.sendOneShot(payload)
         } catch {
             NSLog("Skald: one-shot APPROVE failed: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - One-shot elicitation send
+
+    /// Open a short `.client` WS and send an `elicitation_response`.  Only used
+    /// for the value-less actions (e.g. `decline`); a secret `accept` must be
+    /// typed in the in-app secure sheet, never sent from a notification action.
+    private func sendOneShotElicitation(requestId: String, action: String) async {
+        guard !requestId.isEmpty else { return }
+        let payload = ElicitationResponse(
+            v: 1,
+            kind: "elicitation_response",
+            id: UUID().uuidString.lowercased(),
+            ts: Int64(Date().timeIntervalSince1970 * 1000),
+            request_id: requestId,
+            action: action,
+            content: nil
+        )
+        do {
+            try await SkaldSession.sendOneShot(payload)
+        } catch {
+            NSLog("Skald: one-shot elicitation \(action) failed: \(error.localizedDescription)")
         }
     }
 }
